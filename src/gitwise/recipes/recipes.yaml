@@ -1,0 +1,914 @@
+# Gitwise workflow recipes — hand-authored, do not auto-generate phrases.
+# Command syntax verified against https://git-scm.com/docs
+# See SCHEMA.md for field definitions.
+
+recipes:
+  # ─── Sync (1–4, 23) ───────────────────────────────────────────────────────────
+
+  - id: push_current_branch
+    category: sync
+    phrases:
+      - push
+      - push changes
+      - push commits
+      - push my branch
+      - push this branch
+      - push current branch
+      - push to remote
+      - push to origin
+      - upload branch
+      - upload commits
+      - publish branch
+      - publish commits
+      - send commits to remote
+      - sync branch to remote
+      - push what i have
+      - push local commits
+      - push this to remote
+      - push code up
+      - push my work
+      - upload my work
+      - push to github
+      - push to gitlab
+    requires:
+      - in_repo
+      - has_upstream
+    danger: false
+    command: "git push {remote} {branch}"
+    explanation: >
+      Your branch '{branch}' already tracks {upstream}. This publishes local commits
+      that are not yet on the remote. It does not pull remote changes first.
+    confirmation_level: standard
+
+  - id: push_new_branch_upstream
+    category: sync
+    phrases:
+      - push new branch
+      - push and set upstream
+      - push with upstream
+      - push first time
+      - first push
+      - initial push
+      - push -u
+      - push upstream
+      - set upstream and push
+      - publish new branch
+      - push branch first time
+      - push without upstream
+      - push and track
+      - push -u origin
+      - create remote branch
+      - push and link remote
+      - push new branch to origin
+      - push and set remote
+      - upload new branch
+      - push branch to remote first time
+    requires:
+      - in_repo
+      - no_upstream
+    danger: false
+    command: "git push -u {remote} {branch}"
+    explanation: >
+      Branch '{branch}' has no upstream yet. This creates the remote branch and sets
+      tracking so future 'git push' / 'git pull' work without extra arguments.
+    confirmation_level: standard
+
+  - id: pull_latest
+    category: sync
+    phrases:
+      - pull
+      - pull latest
+      - pull changes
+      - pull remote
+      - pull from origin
+      - pull from remote
+      - get latest
+      - get remote changes
+      - sync from remote
+      - update from remote
+      - download remote changes
+      - pull down
+      - pull main
+      - pull branch
+      - fetch and merge remote
+      - update branch from remote
+      - pull commits
+      - sync with remote
+      - pull latest changes
+      - update local from remote
+    requires:
+      - in_repo
+      - has_upstream
+    danger: false
+    command: "git pull {remote} {branch}"
+    explanation: >
+      Fetches and merges from {upstream} into your current branch '{branch}'.
+      If you have uncommitted changes, commit or stash first to avoid conflicts.
+    confirmation_level: standard
+
+  - id: fetch_remote
+    category: sync
+    phrases:
+      - fetch
+      - fetch remote
+      - fetch origin
+      - fetch all
+      - fetch branches
+      - download remote refs
+      - update remote tracking
+      - fetch latest
+      - fetch without merge
+      - fetch from origin
+      - fetch from remote
+      - refresh remote refs
+      - check remote updates
+      - fetch all remotes
+      - fetch --prune
+      - prune remote branches
+      - fetch and prune
+    requires:
+      - in_repo
+      - has_remote
+    danger: false
+    command: "git fetch --prune {remote}"
+    explanation: >
+      Downloads new commits and branch tips from '{remote}' without changing your
+      working tree. --prune removes stale remote-tracking branches that were deleted upstream.
+    confirmation_level: readonly
+
+  - id: force_push_safe
+    category: sync
+    phrases:
+      - force push
+      - force push safe
+      - force push with lease
+      - force-with-lease
+      - force push branch
+      - overwrite remote branch safely
+      - push after rebase
+      - push rewritten history
+      - force push after amend
+      - safe force push
+      - push force lease
+      - force push origin
+    requires:
+      - in_repo
+      - has_upstream
+    danger: true
+    command: "git push --force-with-lease {remote} {branch}"
+    explanation: >
+      Overwrites the remote branch only if nobody else pushed since your last fetch.
+      Safer than --force. Use after rebase/amend when you intend to replace remote history.
+      Never use on shared default branches unless your team expects it.
+    confirmation_level: elevated
+
+  # ─── Branch (5–13) ────────────────────────────────────────────────────────────
+
+  - id: create_branch
+    category: branch
+    phrases:
+      - create branch
+      - new branch
+      - make branch
+      - start branch
+      - branch off
+      - create new branch
+      - new feature branch
+      - spin up branch
+      - branch from here
+      - git new branch
+      - create and switch branch
+      - checkout new branch
+      - switch to new branch
+      - open new branch
+      - start feature branch
+      - create branch called
+      - branch named
+    requires:
+      - in_repo
+      - intent_has_branch
+    danger: false
+    command: "git switch -c {name}"
+    explanation: >
+      Creates branch '{name}' from your current HEAD and switches to it.
+      Uncommitted changes carry over if Git can apply them cleanly.
+    confirmation_level: standard
+
+  - id: switch_branch
+    category: branch
+    phrases:
+      - switch branch
+      - change branch
+      - go to branch
+      - checkout branch
+      - switch to
+      - move to branch
+      - open branch
+      - use branch
+      - work on branch
+      - switch to branch
+      - change to branch
+      - hop to branch
+      - select branch
+      - git switch
+      - checkout
+      - move branch
+      - jump to branch
+    requires:
+      - in_repo
+      - intent_has_branch
+    danger: false
+    command: "git switch {name}"
+    explanation: >
+      Switches your working tree to existing branch '{name}'.
+      Commit or stash local changes first if Git reports they would be overwritten.
+    confirmation_level: standard
+
+  - id: rename_branch
+    category: branch
+    phrases:
+      - rename branch
+      - rename current branch
+      - change branch name
+      - rename local branch
+      - branch rename
+      - call branch
+      - new name for branch
+      - rename this branch
+      - rename my branch
+      - give branch a new name
+    requires:
+      - in_repo
+      - intent_has_branch
+    danger: false
+    command: "git branch -m {name}"
+    explanation: >
+      Renames the branch you are currently on to '{name}'.
+      If the branch was already pushed, update the remote separately (push new, delete old).
+    confirmation_level: standard
+
+  - id: list_branches
+    category: branch
+    phrases:
+      - list branches
+      - show branches
+      - all branches
+      - branch list
+      - what branches
+      - see branches
+      - local and remote branches
+      - branches available
+      - show all branches
+      - list local branches
+      - list remote branches
+      - which branches exist
+      - display branches
+      - git branches
+    requires:
+      - in_repo
+    danger: false
+    command: "git branch -a -vv"
+    explanation: >
+      Lists local branches, remote-tracking branches, and their upstream/tracking info.
+      Read-only; does not change any refs or files.
+    confirmation_level: readonly
+
+  - id: delete_local_branch
+    category: branch
+    phrases:
+      - delete branch
+      - delete local branch
+      - remove branch
+      - remove local branch
+      - drop branch
+      - delete branch locally
+      - get rid of branch
+      - remove feature branch
+      - delete merged branch
+      - prune local branch
+      - delete old branch
+      - remove branch from local
+      - force delete branch
+      - delete branch force
+      - delete branch even if unmerged
+    requires:
+      - in_repo
+      - intent_has_branch
+    danger: true
+    command: "git branch -d {name}"
+    explanation: >
+      Deletes local branch '{name}' only if fully merged (safe delete).
+      If Git refuses and you are sure, use: git branch -D {name}
+      You cannot delete the branch you are currently on — switch away first.
+    confirmation_level: elevated
+
+  - id: delete_remote_branch
+    category: branch
+    phrases:
+      - delete remote branch
+      - remove remote branch
+      - delete branch on origin
+      - delete branch from remote
+      - remove branch from origin
+      - delete origin branch
+      - prune remote branch on server
+      - drop remote branch
+      - delete branch on github
+      - remove remote feature branch
+      - delete upstream branch
+    requires:
+      - in_repo
+      - has_remote
+      - intent_has_branch
+    danger: true
+    command: "git push {remote} --delete {name}"
+    explanation: >
+      Permanently deletes branch '{name}' on remote '{remote}'.
+      Other teammates will lose that remote branch; coordinate before deleting shared branches.
+    confirmation_level: elevated
+
+  - id: merge_into_default
+    category: branch
+    phrases:
+      - merge into main
+      - merge into master
+      - merge into default
+      - merge branch into main
+      - merge feature into main
+      - merge to main
+      - merge to master
+      - merge into production
+      - merge branch to default
+      - merge my branch into main
+      - merge current into main
+      - merge feature branch
+      - merge to default branch
+      - land branch on main
+      - merge into primary branch
+    requires:
+      - in_repo
+      - intent_has_branch
+      - not_on_default_branch
+    danger: false
+    command:
+      - "git switch {default_branch}"
+      - "git merge {name}"
+    explanation: >
+      Checks out '{default_branch}', then merges branch '{name}' into it.
+      Resolve any merge conflicts, then commit if Git opens a merge commit.
+      Does not push — run push after verifying the merge.
+    confirmation_level: standard
+
+  - id: abort_merge_or_rebase
+    category: branch
+    phrases:
+      - abort merge
+      - cancel merge
+      - stop merge
+      - undo merge
+      - merge abort
+      - quit merge
+      - exit merge
+      - cancel merge conflict
+      - abort merge conflict
+      - stop merge in progress
+      - abort rebase
+      - cancel rebase
+      - stop rebase
+      - quit rebase
+      - exit rebase
+      - undo rebase
+      - rebase abort
+      - stop rebase in progress
+      - cancel rebase conflict
+      - abort operation
+      - cancel git operation
+    requires:
+      - in_repo
+      - merge_or_rebase_in_progress
+    danger: true
+    command: "git merge --abort"
+    explanation: >
+      If a merge is in progress (MERGE_HEAD exists), runs: git merge --abort
+      If a rebase is in progress instead, runs: git rebase --abort
+      The CLI selects the correct command from repo state — never run the wrong one blindly.
+    confirmation_level: elevated
+
+  - id: rebase_onto_default
+    category: branch
+    phrases:
+      - rebase onto main
+      - rebase onto master
+      - rebase on main
+      - rebase on master
+      - rebase onto default
+      - rebase feature onto main
+      - rebase current branch onto main
+      - rebase onto latest main
+      - update branch with rebase
+      - replay commits on main
+      - rebase from main
+    requires:
+      - in_repo
+      - not_on_default_branch
+      - has_remote
+    danger: true
+    command:
+      - "git fetch {remote}"
+      - "git rebase {remote}/{default_branch}"
+    explanation: >
+      Replays your current branch commits on top of the latest '{default_branch}' from
+      '{remote}'. Rewrites history — use force-with-lease push afterward if already published.
+      Resolve conflicts with 'git rebase --continue' or abort with 'git rebase --abort'.
+    confirmation_level: elevated
+
+  # ─── Stash (14–16) ────────────────────────────────────────────────────────────
+
+  - id: stash_changes
+    category: stash
+    phrases:
+      - stash
+      - stash changes
+      - stash work
+      - stash my changes
+      - save changes for later
+      - shelve changes
+      - temporarily save
+      - hide changes
+      - stash modifications
+      - stash tracked changes
+      - git stash
+      - stash current work
+      - stash before pull
+      - stash before switch
+      - put changes away
+      - stash with message
+      - stash push
+    requires:
+      - in_repo
+      - dirty_tree
+    danger: false
+    command: "git stash push -m \"{message}\""
+    explanation: >
+      Saves tracked modifications to the stash stack and reverts your working tree to HEAD.
+      Default message is used if you did not specify one in your intent.
+      Untracked files are not included unless you use the untracked stash recipe.
+    confirmation_level: standard
+
+  - id: stash_including_untracked
+    category: stash
+    phrases:
+      - stash untracked
+      - stash including untracked
+      - stash all files
+      - stash everything
+      - stash tracked and untracked
+      - stash with untracked
+      - stash -u
+      - stash include untracked
+      - stash new files
+      - stash all changes
+      - stash complete workspace
+      - stash including new files
+      - stash push untracked
+      - stash all including untracked
+    requires:
+      - in_repo
+      - dirty_tree
+    danger: false
+    command: "git stash push -u -m \"{message}\""
+    explanation: >
+      Stashes tracked and untracked files, then cleans them from the working tree.
+      Use before switching branches when you have new files that are not yet committed.
+    confirmation_level: standard
+
+  - id: apply_latest_stash
+    category: stash
+    phrases:
+      - apply stash
+      - pop stash
+      - restore stash
+      - unstash
+      - get stash back
+      - apply latest stash
+      - pop latest stash
+      - bring back stashed changes
+      - recover stash
+      - git stash pop
+      - git stash apply
+      - use stash
+      - load stash
+      - restore stashed work
+      - apply last stash
+      - pop last stash
+      - stash pop
+    requires:
+      - in_repo
+      - has_stash
+    danger: false
+    command: "git stash pop"
+    explanation: >
+      Applies the most recent stash and removes it from the stash list.
+      If you want to keep the stash entry, use instead: git stash apply
+      Conflicts may require manual resolution.
+    confirmation_level: standard
+
+  # ─── Commit (17–18) ───────────────────────────────────────────────────────────
+
+  - id: stage_all_changes
+    category: commit
+    phrases:
+      - stage all
+      - add all
+      - git add
+      - add all files
+      - stage all files
+      - stage changes
+      - add changes
+      - add everything
+      - stage everything
+      - add to index
+      - stage modifications
+      - add modified files
+      - stage untracked and modified
+      - git add dot
+      - add .
+      - stage .
+      - prepare commit
+      - stage for commit
+      - index all changes
+    requires:
+      - in_repo
+      - has_uncommitted
+    danger: false
+    command: "git add -A"
+    explanation: >
+      Stages all modifications and deletions in the entire repo (same as 'git add -A').
+      Review with 'git status' before committing. Does not commit by itself.
+    confirmation_level: standard
+
+  - id: commit_changes
+    category: commit
+    phrases:
+      - commit
+      - commit changes
+      - save commit
+      - create commit
+      - commit with message
+      - git commit
+      - commit staged
+      - commit files
+      - make commit
+      - record changes
+      - commit work
+      - commit all staged
+      - save to git history
+      - commit -m
+      - write commit
+      - finalize commit
+    requires:
+      - in_repo
+      - has_staged
+      - intent_has_message
+    danger: false
+    command: "git commit -m \"{message}\""
+    explanation: >
+      Creates a new commit from staged changes with your message.
+      Nothing is pushed to the remote until you push separately.
+    confirmation_level: standard
+
+  # ─── Undo / discard (19–22) ───────────────────────────────────────────────────
+
+  - id: undo_last_commit_keep
+    category: undo
+    phrases:
+      - undo commit
+      - uncommit
+      - undo last commit
+      - remove last commit
+      - undo previous commit
+      - take back commit
+      - reverse last commit keep changes
+      - undo commit keep changes
+      - soft reset
+      - soft reset last commit
+      - reset soft head
+      - undo commit but keep files
+      - remove commit keep changes
+      - redo wrong commit
+      - fix last commit message
+      - undo recent commit
+      - roll back last commit
+      - delete last commit keep work
+      - undo head commit
+      - cancel last commit
+    requires:
+      - in_repo
+    danger: false
+    command: "git reset --soft HEAD~1"
+    explanation: >
+      Moves HEAD back one commit but keeps all changes staged (in the index).
+      Use to redo a commit message or combine commits. Does not touch the remote.
+    confirmation_level: standard
+
+  - id: undo_staged
+    category: undo
+    phrases:
+      - unstage
+      - unstage all
+      - undo staged
+      - undo staging
+      - remove from staging
+      - unstage files
+      - unstage changes
+      - reset staged
+      - undo git add
+      - unstage everything
+      - restore staged
+      - take out of index
+      - remove staged files
+      - clear staging area
+      - unstage all files
+      - git unstage
+    requires:
+      - in_repo
+      - has_staged
+    danger: false
+    command: "git restore --staged ."
+    explanation: >
+      Removes all files from the staging area (index) but keeps your working tree edits.
+      Does not delete any file content.
+    confirmation_level: standard
+
+  - id: discard_one_file
+    category: undo
+    phrases:
+      - discard file
+      - discard changes in file
+      - revert file
+      - restore file
+      - undo file changes
+      - throw away file changes
+      - reset file
+      - checkout file
+      - restore one file
+      - discard single file
+      - drop file changes
+      - revert changes to file
+      - undo edits to file
+      - git restore file
+      - discard modifications to file
+    requires:
+      - in_repo
+      - intent_has_path
+    danger: true
+    command: "git restore {path}"
+    explanation: >
+      Discards unstaged modifications in '{path}', restoring it to the last commit (HEAD).
+      Staged changes to this file are not removed — unstage first if needed.
+      This cannot be undone.
+    confirmation_level: elevated
+
+  - id: discard_all_local
+    category: undo
+    phrases:
+      - discard all changes
+      - discard everything
+      - throw away all changes
+      - reset all files
+      - revert all changes
+      - undo all changes
+      - clean working tree
+      - wipe local changes
+      - restore all files
+      - discard local modifications
+      - reset hard to head
+      - throw away all local work
+      - delete all uncommitted changes
+      - start fresh
+      - clean all untracked and modified
+    requires:
+      - in_repo
+      - dirty_tree
+    danger: true
+    command:
+      - "git restore ."
+      - "git clean -fd"
+    explanation: >
+      Step 1 restores all tracked files to HEAD (destroys unstaged edits).
+      Step 2 removes untracked files and directories (-f force, -d directories).
+      This is destructive and cannot be undone. Stash first if you might need anything back.
+    confirmation_level: elevated
+
+  # ─── Remote (24–25) ───────────────────────────────────────────────────────────
+
+  - id: clone_repo
+    category: remote
+    phrases:
+      - clone
+      - clone repo
+      - clone repository
+      - git clone
+      - download repo
+      - copy repository
+      - clone from github
+      - clone from url
+      - get repository
+      - clone project
+      - checkout repo
+      - clone remote repo
+      - clone git repo
+      - clone this repo
+      - clone repository from url
+    requires:
+      - not_in_repo
+      - intent_has_url
+    danger: false
+    command: "git clone {url}"
+    explanation: >
+      Creates a new directory with a copy of the repository at '{url}'.
+      Run this from a parent folder, not inside an existing git repo.
+    confirmation_level: standard
+
+  - id: set_remote_origin
+    category: remote
+    phrases:
+      - add remote
+      - add origin
+      - set remote origin
+      - add remote origin
+      - connect remote
+      - link remote repository
+      - add github remote
+      - set origin url
+      - add origin remote
+      - configure remote origin
+      - attach remote
+      - register remote origin
+      - change remote url
+      - update remote url
+      - change origin url
+      - update origin
+      - set remote url
+      - fix remote url
+      - change origin
+      - update origin url
+      - replace remote url
+      - modify origin url
+      - remote set-url
+    requires:
+      - in_repo
+      - intent_has_url
+    danger: false
+    command: "git remote add origin {url}"
+    explanation: >
+      If no 'origin' remote exists: git remote add origin {url}
+      If 'origin' already exists: git remote set-url origin {url}
+      The CLI picks the correct command from repo state before you confirm.
+    confirmation_level: standard
+
+  # ─── History / inspect (26–29) ──────────────────────────────────────────────
+
+  - id: show_status
+    category: history
+    phrases:
+      - status
+      - git status
+      - show status
+      - repo status
+      - what changed
+      - check status
+      - working tree status
+      - show changes status
+      - current status
+      - file status
+      - whats changed
+      - see status
+      - display status
+      - show git status
+    requires:
+      - in_repo
+    danger: false
+    command: "git status"
+    explanation: >
+      Shows current branch, staged/unstaged changes, and untracked files.
+      Read-only.
+    confirmation_level: readonly
+
+  - id: show_diff
+    category: history
+    phrases:
+      - diff
+      - show diff
+      - git diff
+      - see changes
+      - show changes
+      - what did i change
+      - view diff
+      - display diff
+      - diff unstaged
+      - show file changes
+      - compare working tree
+      - see modifications
+      - show unstaged diff
+      - diff working tree
+      - staged diff
+      - diff staged
+      - show staged changes
+      - diff cached
+      - diff --staged
+      - what is staged
+      - see staged diff
+      - show index diff
+      - diff added files
+      - show what will be committed
+    requires:
+      - in_repo
+    danger: false
+    command: "git diff"
+    explanation: >
+      Default: unstaged changes in tracked files (working tree vs index).
+      If your intent mentions staged/index changes, the CLI uses: git diff --staged
+    confirmation_level: readonly
+
+  - id: check_history
+    category: history
+    phrases:
+      - log
+      - history
+      - commit history
+      - show history
+      - git log
+      - recent commits
+      - see commits
+      - list commits
+      - show commits
+      - view history
+      - commit log
+      - last commits
+      - show recent commits
+      - display log
+      - git history
+    requires:
+      - in_repo
+    danger: false
+    command: "git log --oneline -20"
+    explanation: >
+      Shows the 20 most recent commits on the current branch (compact one-line format).
+      Read-only.
+    confirmation_level: readonly
+
+  - id: create_tag
+    category: history
+    phrases:
+      - tag
+      - create tag
+      - git tag
+      - new tag
+      - tag release
+      - tag version
+      - create release tag
+      - mark version
+      - tag commit
+      - add tag
+      - name tag
+      - tag this commit
+      - tag v
+      - version tag
+    requires:
+      - in_repo
+      - intent_has_name
+    danger: false
+    command: "git tag {name}"
+    explanation: >
+      Creates a lightweight tag '{name}' at the current HEAD commit.
+      For annotated releases with message use: git tag -a {name} -m "your message"
+      Push tags separately: git push {remote} {name}
+    confirmation_level: standard
+
+  # ─── GitHub (30) — deferred ───────────────────────────────────────────────────
+
+  - id: create_github_pr
+    category: github
+    phrases:
+      - create pull request
+      - open pull request
+      - new pr
+      - create pr
+      - open pr
+      - make pull request
+      - github pull request
+      - submit pull request
+      - start pull request
+      - create merge request
+    requires:
+      - in_repo
+      - has_upstream
+    danger: false
+    command: "gh pr create"
+    explanation: >
+      Pull requests require the GitHub CLI (gh) and authentication — not auto-run in MVP.
+      After installing gh: run 'gh pr create' and follow prompts, or use
+      'gh pr create --title "..." --body "..."' for non-interactive flow.
+      Ensure your branch is pushed to {remote} first.
+    confirmation_level: deferred
