@@ -20,6 +20,8 @@ def format_whereami(state: RepoState) -> str:
     lines.append(f"Repo: {state.repo_name or 'unknown'}")
     lines.append(f"Branch: {state.branch or '(detached HEAD)'}")
     lines.append(f"Remote: {state.remote or '(none)'}")
+    if state.remote_url:
+        lines.append(f"Remote URL: {state.remote_url}")
     if state.upstream:
         lines.append(f"Upstream: {state.upstream}")
     else:

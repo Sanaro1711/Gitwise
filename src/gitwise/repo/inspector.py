@@ -7,7 +7,17 @@ from pathlib import Path
 from gitwise.models import RepoState
 from gitwise.repo.git_runner import run_git, run_git_optional
 
-_NOT_IN_REPO = RepoState(in_repo=False, root=None, repo_name=None, branch=None, remote=None, upstream=None, upstream_ref=None, default_branch=None)
+_NOT_IN_REPO = RepoState(
+    in_repo=False,
+    root=None,
+    repo_name=None,
+    branch=None,
+    remote=None,
+    remote_url=None,
+    upstream=None,
+    upstream_ref=None,
+    default_branch=None,
+)
 
 
 class RepoInspector:
@@ -24,6 +34,7 @@ class RepoInspector:
         root_path = Path(root)
         branch = run_git_optional(["branch", "--show-current"], cwd=self._cwd) or None
         remote = self._primary_remote()
+        remote_url = self._remote_url(remote)
         upstream, upstream_ref = self._upstream(branch, remote)
         default_branch = self._default_branch(remote)
         modified, staged, untracked = self._status_counts()
@@ -36,6 +47,7 @@ class RepoInspector:
             repo_name=repo_name,
             branch=branch,
             remote=remote,
+            remote_url=remote_url,
             upstream=upstream,
             upstream_ref=upstream_ref,
             default_branch=default_branch,
@@ -61,6 +73,11 @@ class RepoInspector:
             return None
         names = remotes.splitlines()
         return "origin" if "origin" in names else names[0]
+
+    def _remote_url(self, remote: str | None) -> str | None:
+        if not remote:
+            return None
+        return run_git_optional(["remote", "get-url", remote], cwd=self._cwd)
 
     def _upstream(
         self, branch: str | None, remote: str | None

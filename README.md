@@ -36,6 +36,16 @@ gw whereami
 gw whereami -C path/to/repo
 ```
 
+## Remotes and GitHub access
+
+Gitwise does **not** use a separate GitHub login. It reads your repo’s **configured remote** (`origin`, URL, upstream) and runs the same `git` commands you would — using **your existing** SSH keys or HTTPS credentials.
+
+See [`docs/ACCESS.md`](docs/ACCESS.md) for how auth works and how to verify setup.
+
+`gw whereami` now shows **Remote URL** so you can see which host (e.g. GitHub) git will talk to.
+
+**Automatic `-u`:** when `gw do` ships, push uses [`push_resolver`](src/gitwise/matching/push_resolver.py) — `-u` is added only when your branch has no upstream (or you explicitly ask for it), not because you said a magic phrase.
+
 ## Privacy and safety
 
 - Gitwise only runs git in the **directory you are in** (or `-C path`). It does not scan your home folder or read unrelated files.

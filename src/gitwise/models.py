@@ -14,6 +14,7 @@ class RepoState:
     repo_name: str | None
     branch: str | None
     remote: str | None
+    remote_url: str | None  # e.g. https://github.com/user/repo.git
     upstream: str | None  # e.g. origin/main
     upstream_ref: str | None  # e.g. origin/main for rev-list
     default_branch: str | None
