@@ -161,8 +161,27 @@ def _extract_path_fallback(raw: str) -> str | None:
 
 def _extract_branch_fallback(raw: str) -> str | None:
     skip = {
-        "origin", "upstream", "remote", "branch", "repo", "repository",
-        "changes", "commits", "latest", "all", "everything", "file", "files",
+        "origin",
+        "upstream",
+        "remote",
+        "branch",
+        "repo",
+        "repository",
+        "changes",
+        "commits",
+        "latest",
+        "all",
+        "everything",
+        "file",
+        "files",
+        "to",
+        "my",
+        "this",
+        "current",
+        "work",
+        "code",
+        "github",
+        "gitlab",
     }
     for pattern in _BRANCH_PATTERNS:
         for match in pattern.finditer(raw):

@@ -39,13 +39,13 @@ def test_has_upstream_no_dash_u() -> None:
     assert "git push origin feature" == plan.commands[0]
 
 
-def test_push_this_to_main() -> None:
+def test_push_always_uses_current_branch() -> None:
     state = _state(branch="feature-x", upstream="origin/feature-x", upstream_ref="origin/feature-x")
     intent = parse_intent("push this to main")
     plan = resolve_push(state, intent)
     assert intent.branch == "main"
-    assert "main" in plan.commands[0]
-    assert "origin" in plan.commands[0]
+    assert "git push origin feature-x" == plan.commands[0]
+    assert "main" not in plan.commands[0]
 
 
 def test_needs_upstream_flag_helper() -> None:

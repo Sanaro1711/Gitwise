@@ -39,7 +39,7 @@ _PATTERNS: list[_Pattern] = [
     _p(
         "branch_not_found",
         "Branch not found",
-        r"unknown revision|pathspec .* did not match|not a valid object name|branch .* not found",
+        r"unknown revision|invalid reference|pathspec .* did not match|not a valid object name|branch .* not found",
         "Git could not find the branch or commit you referenced.",
         'gw do "list branches"',
         "gw do 'whereami'",

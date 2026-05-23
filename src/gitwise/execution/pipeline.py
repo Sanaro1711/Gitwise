@@ -9,7 +9,6 @@ from gitwise.execution.failures import (
     classify_failure,
     format_failure_report,
     format_post_check_warning,
-    format_pre_check_block,
 )
 from gitwise.execution.post_checks import run_post_checks
 from gitwise.execution.pre_checks import run_pre_checks
@@ -70,5 +69,6 @@ def execute_plan(
     post = run_post_checks(plan, state, state_after, intent, cwd=cwd)
     if not post.ok:
         print(format_post_check_warning(post))
+        return PipelineResult(exit_code=1, run_results=results)
 
     return PipelineResult(exit_code=0, run_results=results)

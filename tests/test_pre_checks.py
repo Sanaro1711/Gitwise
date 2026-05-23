@@ -39,7 +39,7 @@ def test_switch_branch_missing_blocks() -> None:
     intent = parse_intent("switch to 'ghost-branch'")
     pre = run_pre_checks(_plan("switch_branch"), _state(), intent)
     assert not pre.ok
-    assert "does not exist" in pre.message.lower()
+    assert "no local branch" in pre.message.lower()
     assert pre.suggestions
 
 
@@ -50,11 +50,30 @@ def test_switch_already_on_branch() -> None:
     assert "already" in pre.message.lower()
 
 
+def test_push_different_branch_than_head_blocks() -> None:
+    intent = parse_intent("push this to main")
+    pre = run_pre_checks(
+        _plan("push_current_branch"),
+        _state(branch="feature-x"),
+        intent,
+    )
+    assert not pre.ok
+    assert "current branch" in pre.title.lower()
+    assert "feature-x" in pre.message
+    assert "main" in pre.message
+
+
+def test_push_plain_phrase_not_blocked() -> None:
+    intent = parse_intent("push to origin")
+    pre = run_pre_checks(_plan("push_current_branch"), _state(branch="feature"), intent)
+    assert pre.ok
+
+
 def test_commit_no_message_blocks() -> None:
     intent = parse_intent("commit")
     pre = run_pre_checks(
         _plan("commit_changes"),
-        _state(has_staged=True, staged_count=1),
+        _state(staged_count=1),
         intent,
     )
     assert not pre.ok

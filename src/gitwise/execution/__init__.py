@@ -1,5 +1,5 @@
-"""
-Execution pipeline (pre-checks → command → post-checks → failure handler).
+"""Execution pipeline: pre-checks, runner, post-checks, failure handling."""
 
-Implemented in a later milestone; see docs/EXECUTION_PIPELINE.md.
-"""
+from gitwise.execution.pipeline import execute_plan, run_pre_checks_for_plan
+
+__all__ = ["execute_plan", "run_pre_checks_for_plan"]
