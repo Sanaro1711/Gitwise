@@ -1,8 +1,12 @@
 """
 Parse natural-language intent for gw do.
 
-Extracts branch names, paths, URLs, messages, and primary action hints so
-rapidfuzz can match recipe families while repo state fills in git flags (-u, etc.).
+Convention: text inside **single quotes** is the value (message, branch name, file, URL).
+Wrap the whole intent in double quotes for the shell:
+
+  gw do "commit 'fix login bug'"
+  gw do "create branch 'feature/login'"
+  gw do "delete branch 'old-stuff'"
 """
 
 from __future__ import annotations
@@ -11,7 +15,25 @@ import re
 
 from gitwise.models import ParsedIntent
 
-# Order matters: longer / more specific actions first
+_SINGLE_QUOTED = re.compile(r"'([^']+)'")
+
+# Which ParsedIntent field a single-quoted value maps to, by primary action
+_QUOTED_FIELD_BY_ACTION: dict[str, str] = {
+    "commit": "message",
+    "stash": "message",
+    "stash_untracked": "message",
+    "branch_create": "name",
+    "branch_switch": "name",
+    "branch_delete": "name",
+    "tag": "name",
+    "merge": "name",
+    "rebase": "name",
+    "push": "branch",
+    "discard_file": "path",
+    "clone": "url",
+    "remote": "url",
+}
+
 _ACTION_PATTERNS: list[tuple[str, list[str]]] = [
     ("force_push", ["force push", "force-with-lease", "force with lease", "safe force push"]),
     ("abort", ["abort merge", "abort rebase", "cancel merge", "cancel rebase", "stop merge", "stop rebase"]),
@@ -21,7 +43,7 @@ _ACTION_PATTERNS: list[tuple[str, list[str]]] = [
     ("stash_untracked", ["stash untracked", "stash including untracked", "stash all", "stash everything"]),
     ("stash", ["git stash", "stash pop", "stash apply", "unstash", "stash"]),
     ("undo_commit", ["uncommit", "undo commit", "undo last commit", "soft reset", "remove last commit"]),
-    ("commit", ["git commit", "commit changes", "commit with", "commit"]),
+    ("commit", ["git commit", "commit changes", "commit with", "commit this", "commit"]),
     ("unstage", ["unstage", "undo staged", "remove from staging"]),
     ("discard_all", ["discard all", "throw away all", "wipe local", "clean all"]),
     ("discard_file", ["discard file", "discard changes", "revert file", "restore file", "undo file"]),
@@ -56,20 +78,7 @@ _PATH = re.compile(
     r"(?:^|\s)([\w./\\-]+\.(?:py|ts|tsx|js|jsx|md|json|yaml|yml|txt|csv|html|css|go|rs|java|kt|xml|toml|cfg|ini|env))(?:\s|$)",
     re.I,
 )
-_PATH_EXPLICIT = re.compile(
-    r'\b(?:file\s+)?["\']([^"\']+)["\']|'
-    r'\bin\s+([\w./\\-]+\.\w+)\b|'
-    r'\b(?:discard|restore|revert)\s+(?:changes\s+in\s+)?([\w./\\-]+\.\w+)',
-    re.I,
-)
-_MESSAGE_PATTERNS = [
-    re.compile(r'[-]m\s+["\']([^"\']+)["\']', re.I),
-    re.compile(r'\bcommit\s+(?:with\s+)?(?:message\s+)?["\']([^"\']+)["\']', re.I),
-    re.compile(r'\bmessage\s+["\']([^"\']+)["\']', re.I),
-    re.compile(r'\bstash\s+(?:with\s+)?(?:message\s+)?["\']([^"\']+)["\']', re.I),
-    re.compile(r'\bwith\s+message\s+["\']([^"\']+)["\']', re.I),
-]
-_QUOTED = re.compile(r'"([^"]+)"|\'([^\']+)\'')
+_DOUBLE_QUOTED = re.compile(r'"([^"]+)"')
 _REMOTE_NAME = re.compile(r"\b(origin|upstream)\b", re.I)
 _FORCE_DELETE = re.compile(r"\b(force|forced)\s+delete\b|\bdelete\s+.*\bforce", re.I)
 
@@ -95,60 +104,80 @@ def _detect_action(normalized: str, raw: str) -> str | None:
     return None
 
 
-def _extract_path(raw: str) -> str | None:
-    m = _PATH_EXPLICIT.search(raw)
-    if m:
-        for group in m.groups():
-            if group:
-                return group
-    m = _PATH.search(raw)
-    if m:
-        return m.group(1)
+def _extract_single_quoted(raw: str) -> str | None:
+    m = _SINGLE_QUOTED.search(raw)
+    if m and m.group(1).strip():
+        return m.group(1).strip()
     return None
 
 
-def _extract_branch(raw: str, normalized: str) -> str | None:
+def _infer_field_for_quoted(action: str | None, quoted: str) -> str:
+    """Pick field when action is unknown or ambiguous."""
+    if action and action in _QUOTED_FIELD_BY_ACTION:
+        return _QUOTED_FIELD_BY_ACTION[action]
+    lower = quoted.lower()
+    if "://" in quoted or quoted.startswith("git@"):
+        return "url"
+    if re.search(r"\.[a-zA-Z0-9]+$", quoted) and ("/" in quoted or "\\" in quoted):
+        return "path"
+    if action in ("commit", "stash", "stash_untracked") or "message" in (action or ""):
+        return "message"
+    return "name"
+
+
+def _apply_quoted_value(
+    action: str | None,
+    quoted: str,
+    *,
+    message: str | None,
+    branch: str | None,
+    name: str | None,
+    path: str | None,
+    url: str | None,
+) -> tuple[str | None, str | None, str | None, str | None, str | None]:
+    field = _infer_field_for_quoted(action, quoted)
+    if field == "message":
+        message = quoted
+    elif field == "branch":
+        branch = quoted
+        name = name or quoted
+    elif field == "name":
+        name = quoted
+        branch = branch or quoted
+    elif field == "path":
+        path = quoted
+    elif field == "url":
+        url = quoted
+    return message, branch, name, path, url
+
+
+def _extract_path_fallback(raw: str) -> str | None:
+    m = re.search(r"\bin\s+([\w./\\-]+\.\w+)\b", raw, re.I)
+    if m:
+        return m.group(1)
+    m = _PATH.search(raw)
+    return m.group(1) if m else None
+
+
+def _extract_branch_fallback(raw: str) -> str | None:
     skip = {
-        "origin",
-        "upstream",
-        "remote",
-        "branch",
-        "repo",
-        "repository",
-        "changes",
-        "commits",
-        "latest",
-        "all",
-        "everything",
-        "file",
-        "files",
+        "origin", "upstream", "remote", "branch", "repo", "repository",
+        "changes", "commits", "latest", "all", "everything", "file", "files",
     }
     for pattern in _BRANCH_PATTERNS:
         for match in pattern.finditer(raw):
             name = (match.group(1) if match.lastindex else match.group(0)) or ""
             name = name.strip("\"'")
-            if name.lower() in skip:
-                continue
-            if "/" in name and name.startswith("http"):
+            if name.lower() in skip or name.startswith("http"):
                 continue
             return name
     return None
 
 
-def _extract_message(raw: str) -> str | None:
-    for pattern in _MESSAGE_PATTERNS:
-        m = pattern.search(raw)
-        if m:
-            return m.group(1)
-    q = _QUOTED.search(raw)
-    if q:
-        text = q.group(1) or q.group(2)
-        lower = raw.lower()
-        if any(
-            ctx in lower
-            for ctx in ("commit", "stash", "message", "tag", "-m")
-        ):
-            return text
+def _extract_message_fallback(raw: str) -> str | None:
+    m = _DOUBLE_QUOTED.search(raw)
+    if m and any(ctx in raw.lower() for ctx in ("commit", "stash", "message", "tag")):
+        return m.group(1)
     return None
 
 
@@ -160,11 +189,30 @@ def parse_intent(text: str) -> ParsedIntent:
 
     normalized = _normalize(raw)
     action = _detect_action(normalized, raw)
-    path = _extract_path(raw)
-    branch = _extract_branch(raw, normalized)
-    message = _extract_message(raw)
-    url_match = _URL.search(raw)
-    url = url_match.group(1) if url_match else None
+
+    message: str | None = None
+    branch: str | None = None
+    name: str | None = None
+    path: str | None = None
+    url: str | None = None
+
+    quoted = _extract_single_quoted(raw)
+    if quoted:
+        message, branch, name, path, url = _apply_quoted_value(
+            action, quoted, message=message, branch=branch, name=name, path=path, url=url
+        )
+
+    if not branch:
+        branch = _extract_branch_fallback(raw)
+    if not name:
+        name = branch
+    if not message:
+        message = _extract_message_fallback(raw)
+    if not path:
+        path = _extract_path_fallback(raw)
+    if not url:
+        url_match = _URL.search(raw)
+        url = url_match.group(1) if url_match else None
 
     remote_m = _REMOTE_NAME.search(raw)
     remote = remote_m.group(1).lower() if remote_m else None
@@ -172,15 +220,7 @@ def parse_intent(text: str) -> ParsedIntent:
     lowered = raw.lower()
     wants_upstream = any(
         p in lowered
-        for p in (
-            "-u",
-            "set upstream",
-            "upstream",
-            "first push",
-            "initial push",
-            "track",
-            "publish new branch",
-        )
+        for p in ("-u", "set upstream", "upstream", "first push", "initial push", "track", "publish new branch")
     )
     wants_staged_diff = any(
         p in lowered for p in ("staged diff", "diff staged", "diff --staged", "cached diff", "staged changes")
@@ -193,24 +233,9 @@ def parse_intent(text: str) -> ParsedIntent:
     keywords: list[str] = []
     if action:
         keywords.append(action)
-    for token in (
-        "push",
-        "pull",
-        "fetch",
-        "stash",
-        "commit",
-        "merge",
-        "rebase",
-        "branch",
-        "clone",
-        "force",
-        "main",
-        "master",
-    ):
+    for token in ("push", "pull", "fetch", "stash", "commit", "merge", "rebase", "branch", "clone", "force", "main", "master"):
         if token in lowered and token not in keywords:
             keywords.append(token)
-
-    name = branch
 
     return ParsedIntent(
         raw=raw,

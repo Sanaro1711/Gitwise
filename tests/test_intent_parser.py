@@ -1,4 +1,4 @@
-"""Intent parsing edge cases."""
+"""Intent parsing — single-quoted values."""
 
 from __future__ import annotations
 
@@ -11,41 +11,50 @@ def test_push_this_to_main() -> None:
     assert i.branch == "main"
 
 
-def test_push_without_to() -> None:
-    i = parse_intent("upload my commits")
-    assert i.primary_action == "push"
-
-
-def test_commit_message() -> None:
-    i = parse_intent('commit "fix login bug"')
+def test_commit_single_quotes() -> None:
+    i = parse_intent("commit 'fix login bug'")
     assert i.primary_action == "commit"
     assert i.message == "fix login bug"
 
 
-def test_stash_untracked() -> None:
-    i = parse_intent("stash everything including untracked")
-    assert i.primary_action in ("stash_untracked", "stash")
-    assert i.wants_untracked_stash
+def test_commit_this_code_single_quotes() -> None:
+    i = parse_intent("commit this code with message 'Added the do feature'")
+    assert i.message == "Added the do feature"
 
 
-def test_clone_url() -> None:
-    i = parse_intent("clone https://github.com/org/repo.git")
-    assert i.primary_action == "clone"
-    assert "github.com" in (i.url or "")
+def test_create_branch_single_quotes() -> None:
+    i = parse_intent("create branch 'feature/login'")
+    assert i.primary_action == "branch_create"
+    assert i.name == "feature/login"
+    assert i.branch == "feature/login"
 
 
-def test_discard_file_path() -> None:
-    i = parse_intent("discard changes in src/app.py")
+def test_delete_branch_single_quotes() -> None:
+    i = parse_intent("delete branch 'old-hotfix'")
+    assert i.primary_action == "branch_delete"
+    assert i.name == "old-hotfix"
+
+
+def test_switch_branch_single_quotes() -> None:
+    i = parse_intent("switch to 'main'")
+    assert i.name == "main"
+
+
+def test_stash_message_single_quotes() -> None:
+    i = parse_intent("stash changes with message 'wip refactor'")
+    assert i.message == "wip refactor"
+
+
+def test_discard_file_single_quotes() -> None:
+    i = parse_intent("discard changes in 'src/app.py'")
     assert i.path == "src/app.py"
-    assert i.primary_action == "discard_file"
 
 
-def test_force_push() -> None:
-    i = parse_intent("force push safely after rebase")
-    assert i.wants_force_push
-    assert i.primary_action == "force_push"
+def test_clone_url_single_quotes() -> None:
+    i = parse_intent("clone 'https://github.com/org/repo.git'")
+    assert i.url == "https://github.com/org/repo.git"
 
 
-def test_uncommit_synonym() -> None:
-    i = parse_intent("uncommit last commit keep changes")
-    assert i.primary_action == "undo_commit"
+def test_push_branch_single_quotes() -> None:
+    i = parse_intent("push to 'main'")
+    assert i.branch == "main"

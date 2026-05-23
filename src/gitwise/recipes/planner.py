@@ -133,7 +133,7 @@ def _plan_from_recipe(
         commands = [f"git branch -D {ctx_name}"]
 
     if recipe.id == "commit_changes" and not intent.message:
-        explanation += " Add a message: gw do 'commit \"your message\"'"
+        explanation += " Add a message: gw do \"commit 'your message'\""
 
     warnings: list[str] = []
     if recipe.danger:

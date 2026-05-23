@@ -15,13 +15,26 @@ pip install -e ".[dev]"
 
 ### `gw do "<intent>"`
 
-Match plain English to a git workflow, explain why, confirm, then run:
+One quoting rule: wrap the intent in **double quotes** for the shell; put **names and messages in single quotes**:
 
 ```bash
-gw do "push this to main"
-gw do "stash my changes" -n          # dry-run: plan only
-gw do "pull latest" -y               # skip confirm (careful)
+gw do "commit 'fix login bug'"
+gw do "create branch 'feature/login'"
+gw do "delete branch 'old-hotfix'"
+gw do "push to main"
+gw do "stash my changes" -n
 ```
+
+On Windows PowerShell this avoids the nested-double-quote problem. Single-quoted segments are mapped automatically:
+
+| You say | Value used for |
+|---------|----------------|
+| `commit '...'` | commit message |
+| `create branch '...'` | branch name |
+| `delete branch '...'` | branch name |
+| `stash ... '...'` | stash message |
+| `discard ... 'path'` | file path |
+| `clone 'url'` | repository URL |
 
 `-u` for push is chosen automatically from upstream tracking (see `push_resolver`).
 
@@ -75,12 +88,13 @@ Validate:
 python src/gitwise/recipes/validate_recipes.py
 ```
 
-## Intent matching (`gw do`, next)
+## Intent matching (`gw do`)
 
-`rapidfuzz` matches your wording against **hand-written phrase lists**, not a generated cheatsheet. Similar phrases work without being listed verbatim:
+`rapidfuzz` matches your wording against recipe phrase lists. **Single quotes** inside the intent carry the value (message, branch name, path, URL). Similar phrases work without being listed verbatim:
 
-- `"push this to main"` → fuzzy **push** + parsed target branch `main`
-- `-u` is chosen from **repo state** (`has_upstream`), not from memorizing one exact phrase
+- `"push this to main"` → fuzzy **push** + branch `main`
+- `"commit 'fix bug'"` → message from single quotes
+- `-u` is chosen from **repo state** (`has_upstream`), not from phrasing
 
 See [`src/gitwise/matching/intent_parser.py`](src/gitwise/matching/intent_parser.py).
 
