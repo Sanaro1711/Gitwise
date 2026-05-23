@@ -34,7 +34,7 @@ def test_match_push_no_upstream() -> None:
     assert outcome.best.recipe_id in ("push_new_branch_upstream", "push_current_branch")
 
 
-def test_plan_push_adds_u() -> None:
+def test_plan_push_adds_u_for_current_branch() -> None:
     state = _state(has_upstream=False)
     intent = parse_intent("push this to main")
     matcher = IntentMatcher()
@@ -42,7 +42,8 @@ def test_plan_push_adds_u() -> None:
     assert outcome.best
     plan = build_plan(outcome.best, intent, state)
     assert "-u" in plan.commands[0]
-    assert "main" in plan.commands[0]
+    assert "feature" in plan.commands[0]
+    assert "main" not in plan.commands[0]
 
 
 def test_plan_push_no_u_when_upstream() -> None:

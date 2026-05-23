@@ -13,6 +13,37 @@ def _target_name(intent: ParsedIntent) -> str | None:
     return (intent.name or intent.branch or "").strip() or None
 
 
+# Words parsed as a "branch" from push phrases but are not real branch names.
+_PUSH_BRANCH_NOISE = frozenset(
+    {
+        "to",
+        "my",
+        "this",
+        "current",
+        "work",
+        "code",
+        "origin",
+        "upstream",
+        "remote",
+        "github",
+        "gitlab",
+        "changes",
+        "commits",
+        "branch",
+    }
+)
+
+
+def _requested_push_branch(intent: ParsedIntent, state: RepoState) -> str | None:
+    """Branch name if the user asked to push somewhere other than HEAD."""
+    raw = (intent.branch or "").strip()
+    if not raw or raw.lower() in _PUSH_BRANCH_NOISE:
+        return None
+    if state.branch and raw.lower() == state.branch.lower():
+        return None
+    return raw
+
+
 def run_pre_checks(
     plan: CommandPlan,
     state: RepoState,
@@ -27,7 +58,7 @@ def run_pre_checks(
     if plan.confirmation_level == "deferred":
         return PreCheckResult(ok=True)
 
-  # Read-only — no git mutation
+    # Read-only — no git mutation
     if plan.confirmation_level == "readonly":
         return PreCheckResult(ok=True)
 
@@ -326,6 +357,22 @@ def _pre_rebase(plan, state, intent, *, cwd=None) -> PreCheckResult:
 
 def _pre_push(plan, state, intent, *, cwd=None) -> PreCheckResult:
     r = PreCheckResult(ok=True)
+
+    other = _requested_push_branch(intent, state)
+    if other and state.branch:
+        return _block(
+            "Push only your current branch",
+            (
+                f"You are on '{state.branch}', but this intent looks like a push to '{other}'. "
+                f"Gitwise only publishes the branch you have checked out so your commits stay "
+                f"where you expect on the remote. Switch to '{other}' first if that is the "
+                f"branch you mean to update, then run push."
+            ),
+            f'gw do "switch to \'{other}\'"',
+            'gw do "push"',
+            "gw do 'whereami'",
+        )
+
     if state.behind > 0:
         _warn(
             r,

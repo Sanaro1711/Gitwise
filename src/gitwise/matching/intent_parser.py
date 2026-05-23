@@ -122,6 +122,15 @@ def _extract_branch(raw: str, normalized: str) -> str | None:
         "everything",
         "file",
         "files",
+        # push phrasing noise (not branch names)
+        "to",
+        "my",
+        "this",
+        "current",
+        "work",
+        "code",
+        "github",
+        "gitlab",
     }
     for pattern in _BRANCH_PATTERNS:
         for match in pattern.finditer(raw):

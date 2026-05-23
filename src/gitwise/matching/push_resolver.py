@@ -55,8 +55,9 @@ def resolve_push(state: RepoState, intent: ParsedIntent) -> PushPlan:
         raise ValueError("Cannot resolve push: not inside a git repository with a current branch")
 
     remote = intent.remote or state.remote or "origin"
-    # Branch ref to push: explicit target (e.g. main) or current branch
-    push_branch = intent.branch or state.branch
+    # Always publish the branch you are on (HEAD). Pushing another local ref while
+    # checked out elsewhere is a common mistake — blocked in pre_checks instead.
+    push_branch = state.branch
 
     use_u = needs_upstream_flag(state, branch=push_branch)
     if intent.wants_upstream:
@@ -70,17 +71,11 @@ def resolve_push(state: RepoState, intent: ParsedIntent) -> PushPlan:
         )
     else:
         cmd = f"git push {remote} {push_branch}"
-        if push_branch == state.branch:
-            tracking = state.upstream or f"{remote}/{push_branch}"
-            reason = (
-                f"Branch '{push_branch}' already tracks {tracking}. "
-                f"Pushing publishes local commits to the remote without changing tracking."
-            )
-        else:
-            reason = (
-                f"Pushes branch '{push_branch}' to {remote} (you are currently on '{state.branch}'). "
-                f"Upstream tracking for '{push_branch}' is unchanged."
-            )
+        tracking = state.upstream or f"{remote}/{push_branch}"
+        reason = (
+            f"Branch '{push_branch}' already tracks {tracking}. "
+            f"Pushing publishes your current branch's commits to the remote."
+        )
 
     if state.behind > 0:
         reason += (
