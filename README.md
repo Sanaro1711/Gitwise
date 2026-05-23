@@ -84,23 +84,41 @@ python src/gitwise/recipes/validate_recipes.py
 
 See [`src/gitwise/matching/intent_parser.py`](src/gitwise/matching/intent_parser.py).
 
-## Execution pipeline (planned for `gw do`)
+## Execution pipeline (`gw do`)
 
-Every run will follow:
+Every run follows:
 
-**pre-checks → command → post-checks → failure handler**
+**pre-checks → confirm → command → post-checks → failure handler**
 
-If e.g. `push` fails because the remote is ahead or there are merge conflicts, Gitwise classifies the error, explains it, and suggests next moves (`pull`, `gw fix`, abort merge) — without auto-running them.
+- **Pre-checks** catch problems early (e.g. switch to a branch that does not exist).
+- **Failure handler** reads git stderr, explains what went wrong, and suggests `gw do` next steps.
 
-Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md). Stub: [`src/gitwise/execution/`](src/gitwise/execution/).
+Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md).
 
 ## Roadmap
 
+### Shipped
+
 - [x] `gw whereami`
-- [x] `gw do "<intent>"` (matcher + confirm + run)
-- [ ] Execution pipeline (pre / post / failure handler)
-- [ ] `gw explain "<command>"`
-- [ ] `gw fix "<error>"` (reuse failure classifier)
+- [x] `gw do "<intent>"` (matcher, confirm, run)
+- [x] ~30 recipes in YAML + single-quote values
+- [x] Auto `-u` on push (`push_resolver`)
+- [x] Pre-checks / post-checks / failure handler on `gw do`
+
+### Not built yet
+
+- [ ] `gw explain "<command>"` — no CLI command; only short text in `gw do` plans
+- [ ] `gw fix "<error>"` — no CLI command; failures on `gw do` already suggest fixes
+
+### Merge (planned)
+
+- [x] Basic: `merge_into_default` recipe (`switch` + `git merge`)
+- [x] `abort_merge_or_rebase` recipe
+- [ ] Merge feature → arbitrary branch (not only default)
+- [ ] `gw do` after conflict: stage resolved files + complete merge commit
+- [ ] Richer merge pre-checks (uncommitted, already up to date)
+- [ ] Post-check: verify merge commit / no lingering `MERGE_HEAD`
+- [ ] `gw fix` entries for common merge error strings
 
 ## License
 
