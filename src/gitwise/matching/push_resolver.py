@@ -70,17 +70,17 @@ def resolve_push(state: RepoState, intent: ParsedIntent) -> PushPlan:
         )
     else:
         cmd = f"git push {remote} {push_branch}"
-        tracking = state.upstream or f"{remote}/{push_branch}"
-        reason = (
-            f"Branch '{state.branch}' already tracks {tracking}. "
-            f"Pushing publishes local commits to the remote without changing tracking."
-        )
-
-    if intent.branch and intent.branch != state.branch:
-        reason = (
-            f"You are on '{state.branch}' but asked to push branch '{push_branch}'. "
-            f"{reason}"
-        )
+        if push_branch == state.branch:
+            tracking = state.upstream or f"{remote}/{push_branch}"
+            reason = (
+                f"Branch '{push_branch}' already tracks {tracking}. "
+                f"Pushing publishes local commits to the remote without changing tracking."
+            )
+        else:
+            reason = (
+                f"Pushes branch '{push_branch}' to {remote} (you are currently on '{state.branch}'). "
+                f"Upstream tracking for '{push_branch}' is unchanged."
+            )
 
     if state.behind > 0:
         reason += (

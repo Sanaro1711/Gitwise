@@ -52,7 +52,7 @@ class RepoState:
 
 @dataclass
 class ParsedIntent:
-    """Values extracted from natural-language intent (for future gw do)."""
+    """Values extracted from natural-language intent."""
 
     raw: str
     name: str | None = None  # branch, tag, etc.
@@ -63,6 +63,20 @@ class ParsedIntent:
     message: str | None = None
     wants_upstream: bool = False
     keywords: list[str] = field(default_factory=list)
+    primary_action: str | None = None
+    wants_staged_diff: bool = False
+    wants_force_push: bool = False
+    wants_untracked_stash: bool = False
+    wants_force_delete: bool = False
+
+
+@dataclass
+class MatchResult:
+    """A recipe match with score metadata."""
+
+    recipe_id: str
+    score: float
+    phrase: str
 
 
 @dataclass
@@ -75,3 +89,6 @@ class CommandPlan:
     commands: list[str]
     danger: bool = False
     confirmation_level: str = "standard"
+    match_score: float = 0.0
+    matched_phrase: str = ""
+    warnings: list[str] = field(default_factory=list)

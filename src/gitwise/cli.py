@@ -8,6 +8,7 @@ from typing import Optional
 import typer
 
 from gitwise import __version__
+from gitwise.commands.do_cmd import run_do
 from gitwise.commands.whereami import run_whereami
 
 app = typer.Typer(
@@ -55,7 +56,36 @@ def whereami(
     raise typer.Exit(code=code)
 
 
-# Future: gw do, gw explain, gw fix
+@app.command("do")
+def do(
+    intent: str = typer.Argument(..., help='What you want to do, e.g. "push this to main"'),
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        "-C",
+        help="Repository directory (default: current directory).",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Show the plan without running git.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation prompt (use with care).",
+    ),
+) -> None:
+    """Run a git workflow from plain English (with explanation and confirmation)."""
+    code = run_do(intent, cwd=path, dry_run=dry_run, yes=yes)
+    raise typer.Exit(code=code)
+
 
 if __name__ == "__main__":
     app()

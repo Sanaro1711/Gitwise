@@ -41,7 +41,9 @@ def test_has_upstream_no_dash_u() -> None:
 
 def test_push_this_to_main() -> None:
     state = _state(branch="feature-x", upstream="origin/feature-x", upstream_ref="origin/feature-x")
-    plan = resolve_push(state, parse_intent("push this to main"))
+    intent = parse_intent("push this to main")
+    plan = resolve_push(state, intent)
+    assert intent.branch == "main"
     assert "main" in plan.commands[0]
     assert "origin" in plan.commands[0]
 

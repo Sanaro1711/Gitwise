@@ -11,7 +11,19 @@ python -m venv .venv
 pip install -e ".[dev]"
 ```
 
-## Commands (current)
+## Commands
+
+### `gw do "<intent>"`
+
+Match plain English to a git workflow, explain why, confirm, then run:
+
+```bash
+gw do "push this to main"
+gw do "stash my changes" -n          # dry-run: plan only
+gw do "pull latest" -y               # skip confirm (careful)
+```
+
+`-u` for push is chosen automatically from upstream tracking (see `push_resolver`).
 
 ### `gw whereami`
 
@@ -85,7 +97,7 @@ Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md). Stub: [`src
 ## Roadmap
 
 - [x] `gw whereami`
-- [ ] `gw do "<intent>"` (matcher + confirm)
+- [x] `gw do "<intent>"` (matcher + confirm + run)
 - [ ] Execution pipeline (pre / post / failure handler)
 - [ ] `gw explain "<command>"`
 - [ ] `gw fix "<error>"` (reuse failure classifier)
