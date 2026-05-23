@@ -5,7 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from gitwise.execution.runner import run_commands
+from gitwise.execution.failures import format_pre_check_block
+from gitwise.execution.pipeline import execute_plan, run_pre_checks_for_plan
 from gitwise.recipes.planner import plan_from_intent
 
 
@@ -70,6 +71,11 @@ def run_do(
 
     assert plan is not None
 
+    pre = run_pre_checks_for_plan(plan, state, intent, cwd=cwd)
+    if not pre.ok:
+        print(format_pre_check_block(pre), file=sys.stderr)
+        return 1
+
     _print_plan(plan)
 
     if plan.confirmation_level == "deferred":
@@ -85,18 +91,7 @@ def run_do(
         print("Cancelled.")
         return 0
 
-    results = run_commands(plan.commands, cwd=cwd)
-    for r in results:
-        if r.stdout:
-            print(r.stdout, end="" if r.stdout.endswith("\n") else "\n")
-        if r.stderr:
-            print(r.stderr, end="" if r.stderr.endswith("\n") else "", file=sys.stderr)
-
-    last = results[-1]
-    if last.returncode != 0:
-        print(f"\nCommand failed (exit {last.returncode}): {last.command}", file=sys.stderr)
-        print("Post-run checks and failure suggestions coming in a future update.", file=sys.stderr)
-        return last.returncode
-
-    print("\nDone.")
-    return 0
+    result = execute_plan(plan, state, intent, cwd=cwd)
+    if result.exit_code == 0:
+        print("\nDone.")
+    return result.exit_code
