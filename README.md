@@ -13,6 +13,18 @@ pip install -e ".[dev]"
 
 ## Commands
 
+### `gw pull`
+
+Guided safe pull with conflict help (also runs when you `gw do "pull"`):
+
+```bash
+gw pull
+gw pull -n          # dry-run: show steps only
+gw pull -C path/to/repo
+```
+
+Flow: check branch → stash if dirty → fetch → merge (no rebase) → step-by-step conflict guide → restore stash (kept until you confirm drop).
+
 ### `gw do "<intent>"`
 
 One quoting rule: wrap the intent in **double quotes** for the shell; put **names and messages in single quotes**:

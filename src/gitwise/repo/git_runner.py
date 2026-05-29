@@ -3,11 +3,50 @@
 from __future__ import annotations
 
 import subprocess
+from dataclasses import dataclass
 from pathlib import Path
 
 
 class GitError(Exception):
     """Git command failed or git is not available."""
+
+
+@dataclass
+class GitResult:
+    returncode: int
+    stdout: str
+    stderr: str
+
+
+def run_git_result(
+    args: list[str],
+    *,
+    cwd: Path | str | None = None,
+    timeout: float = 120.0,
+) -> GitResult:
+    """Run git and return exit code plus captured output (no exception on failure)."""
+    cmd = ["git", *args]
+    work_dir = Path(cwd) if cwd else None
+    try:
+        proc = subprocess.run(
+            cmd,
+            cwd=work_dir,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            shell=False,
+            check=False,
+        )
+    except FileNotFoundError:
+        return GitResult(127, "", "git is not installed or not on PATH")
+    except subprocess.TimeoutExpired:
+        return GitResult(124, "", f"git timed out: {' '.join(cmd)}")
+
+    return GitResult(
+        proc.returncode,
+        proc.stdout or "",
+        proc.stderr or "",
+    )
 
 
 def run_git(

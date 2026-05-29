@@ -390,7 +390,10 @@ def _pre_push(plan, state, intent, *, cwd=None) -> PreCheckResult:
 def _pre_pull(plan, state, intent, *, cwd=None) -> PreCheckResult:
     r = PreCheckResult(ok=True)
     if state.dirty_tree:
-        _warn(r, "Uncommitted changes may cause merge conflicts on pull — consider stashing first.")
+        _warn(
+            r,
+            "Uncommitted changes will be safely stashed before pull and restored afterward.",
+        )
     if not state.has_upstream:
         return _block(
             "No upstream branch",
