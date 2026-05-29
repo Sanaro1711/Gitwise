@@ -70,3 +70,28 @@ def test_plan_stash_dirty() -> None:
     assert outcome.best
     plan = build_plan(outcome.best, intent, state)
     assert "stash push" in plan.commands[0]
+
+
+def test_quoted_message_does_not_match_pull_recipe() -> None:
+    matcher = IntentMatcher()
+    intent = parse_intent("commit 'pull latest from remote'")
+    outcome = matcher.match(
+        intent,
+        _state(
+            staged_count=1,
+            has_upstream=True,
+            upstream="origin/feature",
+            upstream_ref="origin/feature",
+        ),
+    )
+    assert outcome.best is not None
+    assert outcome.best.recipe_id == "commit_changes"
+    assert all(c.recipe_id != "pull_latest" for c in outcome.candidates)
+
+
+def test_quoted_branch_name_does_not_match_stash() -> None:
+    matcher = IntentMatcher()
+    intent = parse_intent("create branch 'my-stash-branch'")
+    outcome = matcher.match(intent, _state())
+    assert outcome.best is not None
+    assert outcome.best.recipe_id == "create_branch"

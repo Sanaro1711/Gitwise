@@ -17,6 +17,13 @@ from gitwise.models import ParsedIntent
 
 _SINGLE_QUOTED = re.compile(r"'([^']+)'")
 
+
+def text_for_matching(text: str) -> str:
+    """Intent text with single-quoted arguments removed (for action/recipe matching only)."""
+    stripped = _SINGLE_QUOTED.sub(" ", text)
+    return re.sub(r"\s+", " ", stripped).strip()
+
+
 # Which ParsedIntent field a single-quoted value maps to, by primary action
 _QUOTED_FIELD_BY_ACTION: dict[str, str] = {
     "commit": "message",
@@ -206,8 +213,9 @@ def parse_intent(text: str) -> ParsedIntent:
     if not raw:
         return ParsedIntent(raw="")
 
-    normalized = _normalize(raw)
-    action = _detect_action(normalized, raw)
+    match_raw = text_for_matching(raw)
+    normalized = _normalize(match_raw)
+    action = _detect_action(normalized, match_raw)
 
     message: str | None = None
     branch: str | None = None
@@ -222,38 +230,38 @@ def parse_intent(text: str) -> ParsedIntent:
         )
 
     if not branch:
-        branch = _extract_branch_fallback(raw)
+        branch = _extract_branch_fallback(match_raw)
     if not name:
         name = branch
     if not message:
         message = _extract_message_fallback(raw)
     if not path:
-        path = _extract_path_fallback(raw)
+        path = _extract_path_fallback(match_raw)
     if not url:
         url_match = _URL.search(raw)
         url = url_match.group(1) if url_match else None
 
-    remote_m = _REMOTE_NAME.search(raw)
+    remote_m = _REMOTE_NAME.search(match_raw)
     remote = remote_m.group(1).lower() if remote_m else None
 
-    lowered = raw.lower()
+    match_lower = match_raw.lower()
     wants_upstream = any(
-        p in lowered
+        p in match_lower
         for p in ("-u", "set upstream", "upstream", "first push", "initial push", "track", "publish new branch")
     )
     wants_staged_diff = any(
-        p in lowered for p in ("staged diff", "diff staged", "diff --staged", "cached diff", "staged changes")
+        p in match_lower for p in ("staged diff", "diff staged", "diff --staged", "cached diff", "staged changes")
     )
-    wants_force = action == "force_push" or "force push" in lowered
+    wants_force = action == "force_push" or "force push" in match_lower
     wants_untracked_stash = action == "stash_untracked" or any(
-        p in lowered for p in ("untracked", "including untracked", "stash all", "stash everything")
+        p in match_lower for p in ("untracked", "including untracked", "stash all", "stash everything")
     )
 
     keywords: list[str] = []
     if action:
         keywords.append(action)
     for token in ("push", "pull", "fetch", "stash", "commit", "merge", "rebase", "branch", "clone", "force", "main", "master"):
-        if token in lowered and token not in keywords:
+        if token in match_lower and token not in keywords:
             keywords.append(token)
 
     return ParsedIntent(
@@ -270,5 +278,5 @@ def parse_intent(text: str) -> ParsedIntent:
         wants_staged_diff=wants_staged_diff,
         wants_force_push=wants_force,
         wants_untracked_stash=wants_untracked_stash,
-        wants_force_delete=bool(_FORCE_DELETE.search(raw)),
+        wants_force_delete=bool(_FORCE_DELETE.search(match_raw)),
     )

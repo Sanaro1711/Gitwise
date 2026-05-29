@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from rapidfuzz import fuzz
 
 from gitwise.models import MatchResult, ParsedIntent, RepoState
+from gitwise.matching.intent_parser import text_for_matching
 from gitwise.recipes.loader import PUSH_RECIPE_IDS, Recipe, load_recipes
 from gitwise.recipes.requires import evaluate_requires
 
@@ -74,7 +75,7 @@ class IntentMatcher:
         *,
         cwd=None,
     ) -> MatcherOutcome:
-        normalized = _normalize_intent(intent.raw)
+        normalized = _normalize_intent(text_for_matching(intent.raw))
         if not normalized:
             return MatcherOutcome(None, [], False, [])
 

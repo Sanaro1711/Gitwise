@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from gitwise.matching.intent_parser import parse_intent
+from gitwise.matching.intent_parser import parse_intent, text_for_matching
 
 
 def test_push_this_to_main() -> None:
@@ -58,3 +58,21 @@ def test_clone_url_single_quotes() -> None:
 def test_push_branch_single_quotes() -> None:
     i = parse_intent("push to 'main'")
     assert i.branch == "main"
+
+
+def test_quoted_text_excluded_from_matching() -> None:
+    assert text_for_matching("commit 'pull latest'") == "commit"
+    assert text_for_matching("create branch 'stash everything'") == "create branch"
+
+
+def test_commit_message_with_recipe_words_not_wrong_action() -> None:
+    i = parse_intent("commit 'pull latest and push to main'")
+    assert i.primary_action == "commit"
+    assert i.message == "pull latest and push to main"
+    assert "pull" not in i.keywords
+
+
+def test_branch_name_with_stash_words_not_stash_action() -> None:
+    i = parse_intent("create branch 'feature/stash-wip'")
+    assert i.primary_action == "branch_create"
+    assert i.name == "feature/stash-wip"
