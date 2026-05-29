@@ -21,7 +21,14 @@ def check_requires(
             state.in_repo and not _has_remote_named(state, "origin", cwd),
             "Remote 'origin' already exists.",
         ),
-        "has_upstream": (state.has_upstream, "Current branch has no upstream tracking branch."),
+        "has_upstream": (
+            state.has_upstream
+            or (
+                intent.primary_action == "pull"
+                and bool((intent.branch or intent.name or "").strip())
+            ),
+            "Current branch has no upstream tracking branch.",
+        ),
         "no_upstream": (not state.has_upstream, "Current branch already has an upstream."),
         "clean_tree": (state.clean_tree, "Working tree has uncommitted changes."),
         "dirty_tree": (state.dirty_tree, "Working tree is clean — nothing to stash or discard."),

@@ -25,6 +25,14 @@ gw pull -C path/to/repo
 
 Flow: check branch → stash if dirty → fetch → merge (no rebase) → step-by-step conflict guide → restore stash (kept until you confirm drop).
 
+Merge **your upstream** by default, or a **named remote branch**:
+
+```bash
+gw pull                              # merge your branch's upstream
+gw do "pull from branch 'main'"      # merge origin/main into current branch
+gw pull --from main                  # same, via flag
+```
+
 ### `gw do "<intent>"`
 
 One quoting rule: wrap the intent in **double quotes** for the shell; put **names and messages in single quotes**:

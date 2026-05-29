@@ -10,7 +10,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from gitwise.models import RepoState
+from gitwise.models import ParsedIntent, RepoState
+from gitwise.matching.pull_resolver import PullPlan, resolve_pull
 from gitwise.output import format_whereami
 from gitwise.repo.git_runner import GitResult, run_git_result
 from gitwise.repo.inspector import RepoInspector
@@ -23,6 +24,7 @@ _STASH_MESSAGE = "gitwise: safe pull backup"
 class SafePullContext:
     cwd: Path
     state: RepoState
+    pull: PullPlan | None = None
     stash_ref: str | None = None
     stashed: bool = False
     merge_completed: bool = False
@@ -33,15 +35,33 @@ class SafePullContext:
 def run_safe_pull(
     *,
     cwd: Path | str | None = None,
+    intent: ParsedIntent | None = None,
+    source_branch: str | None = None,
     dry_run: bool = False,
     skip_confirm: bool = False,
 ) -> int:
     """Run the full safe-pull workflow interactively."""
     work = Path(cwd) if cwd else Path.cwd()
     state = RepoInspector(cwd=work).inspect()
-    ctx = SafePullContext(cwd=work, state=state)
 
-    err = _preflight(state)
+    if intent is None:
+        intent = ParsedIntent(raw="")
+    if source_branch and not (intent.branch or intent.name):
+        intent = ParsedIntent(
+            raw=intent.raw or f"pull from branch '{source_branch}'",
+            branch=source_branch,
+            primary_action="pull",
+        )
+
+    try:
+        pull = resolve_pull(state, intent)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+
+    ctx = SafePullContext(cwd=work, state=state, pull=pull)
+
+    err = _preflight(state, pull)
     if err:
         print(err, file=sys.stderr)
         return 1
@@ -71,16 +91,18 @@ def run_safe_pull(
     return 0
 
 
-def _preflight(state: RepoState) -> str | None:
+def _preflight(state: RepoState, pull: PullPlan) -> str | None:
     if not state.in_repo:
         return "Not inside a git repository."
     if not state.branch:
         return "You are not on a branch (detached HEAD). Switch to a branch before pulling."
-    if not state.has_upstream or not state.upstream_ref:
+    if not pull.source_branch and (not state.has_upstream or not state.upstream_ref):
         return (
             f"Branch '{state.branch}' has no upstream. "
-            f'Run: gw do "push"  # sets upstream on first push'
+            f'Specify a source branch: gw do "pull from branch \'main\'"'
         )
+    if not state.has_remote and not pull.remote:
+        return "No remote configured."
     if state.rebase_in_progress:
         return "A rebase is in progress. Finish or abort it before pulling."
     return None
@@ -88,14 +110,22 @@ def _preflight(state: RepoState) -> str | None:
 
 def _print_overview(ctx: SafePullContext) -> None:
     s = ctx.state
+    pull = ctx.pull
+    assert pull is not None
     print("=== Safe pull ===\n")
     print(f"Branch:   {s.branch}")
-    print(f"Upstream: {s.upstream}")
-    print(f"Remote:   {s.remote}")
-    if s.behind:
-        print(f"Behind:   {s.behind} commit(s) on remote")
+    print(f"Merging:  {pull.label} → {s.branch}")
+    print(f"Remote:   {pull.remote}")
+    if pull.source_branch:
+        print(f"Source:   explicit branch '{pull.source_branch}' on {pull.remote}")
+    elif s.upstream:
+        print(f"Upstream: {s.upstream} (default for this branch)")
+    if not pull.source_branch and s.behind:
+        print(f"Behind:   {s.behind} commit(s) on upstream")
+    elif pull.source_branch:
+        print("Behind:   (n/a — merging a named branch, not upstream sync)")
     else:
-        print("Behind:   up to date with remote (fetch will still run)")
+        print("Behind:   up to date with upstream (fetch will still run)")
     if s.dirty_tree:
         print(
             f"Working tree: dirty "
@@ -111,15 +141,17 @@ def _print_overview(ctx: SafePullContext) -> None:
 
 def _print_dry_run_steps(ctx: SafePullContext) -> None:
     s = ctx.state
+    pull = ctx.pull
+    assert pull is not None
     steps = []
     n = 1
     if s.dirty_tree and not s.merge_in_progress:
         steps.append(f"{n}. git stash push --include-untracked -m \"{_STASH_MESSAGE}\"")
         n += 1
     if not s.merge_in_progress:
-        steps.append(f"{n}. git fetch {s.remote}")
+        steps.append(f"{n}. git fetch {pull.remote}")
         n += 1
-        steps.append(f"{n}. git merge {s.upstream_ref} --no-edit")
+        steps.append(f"{n}. git merge {pull.merge_ref} --no-edit")
         n += 1
     steps.append(f"{n}. (if conflicts) guided merge resolution")
     n += 1
@@ -136,9 +168,10 @@ def _run_pull_steps(ctx: SafePullContext) -> bool:
         if not _create_safe_stash(ctx):
             return False
 
-    remote = ctx.state.remote or "origin"
-    upstream = ctx.state.upstream_ref
-    assert upstream
+    pull = ctx.pull
+    assert pull is not None
+    remote = pull.remote
+    merge_ref = pull.merge_ref
 
     print(f"\n--- Fetching from {remote} ---")
     fetch = run_git_result(["fetch", remote], cwd=ctx.cwd)
@@ -147,8 +180,8 @@ def _run_pull_steps(ctx: SafePullContext) -> bool:
         print("Fetch failed.", file=sys.stderr)
         return False
 
-    print(f"\n--- Merging {upstream} (no rebase) ---")
-    merge = run_git_result(["merge", upstream, "--no-edit"], cwd=ctx.cwd)
+    print(f"\n--- Merging {merge_ref} into {ctx.state.branch} (no rebase) ---")
+    merge = run_git_result(["merge", merge_ref, "--no-edit"], cwd=ctx.cwd)
     _echo_git(merge)
 
     ctx.state = RepoInspector(cwd=ctx.cwd).inspect()

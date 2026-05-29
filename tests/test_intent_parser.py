@@ -76,3 +76,16 @@ def test_branch_name_with_stash_words_not_stash_action() -> None:
     i = parse_intent("create branch 'feature/stash-wip'")
     assert i.primary_action == "branch_create"
     assert i.name == "feature/stash-wip"
+
+
+def test_pull_from_branch_single_quotes() -> None:
+    i = parse_intent("pull from branch 'main'")
+    assert i.primary_action == "pull"
+    assert i.branch == "main"
+
+
+def test_pull_branch_name_not_used_for_matching() -> None:
+    assert text_for_matching("pull from branch 'stash everything'") == "pull from branch"
+    i = parse_intent("pull from branch 'stash everything'")
+    assert i.primary_action == "pull"
+    assert i.branch == "stash everything"

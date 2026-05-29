@@ -394,12 +394,28 @@ def _pre_pull(plan, state, intent, *, cwd=None) -> PreCheckResult:
             r,
             "Uncommitted changes will be safely stashed before pull and restored afterward.",
         )
-    if not state.has_upstream:
+
+    source = (intent.branch or intent.name or "").strip()
+    if not state.has_upstream and not source:
         return _block(
             "No upstream branch",
             "Your branch does not track a remote branch yet.",
-            f'gw do "push to \'{state.branch}\'"',
+            'gw do "pull from branch \'main\'"  # merge a specific remote branch',
+            f'gw do "push"  # or push to set upstream for \'{state.branch}\'',
         )
+
+    if source:
+        remote = intent.remote or state.remote or "origin"
+        if source == state.branch:
+            _warn(
+                r,
+                f"Merging {remote}/{source} into '{state.branch}' — same branch name on remote.",
+            )
+        elif not probes.remote_branch_exists(remote, source, cwd=cwd):
+            _warn(
+                r,
+                f"Remote branch '{remote}/{source}' not found locally yet — fetch will retrieve it.",
+            )
     return r
 
 

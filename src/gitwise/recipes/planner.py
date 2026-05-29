@@ -7,6 +7,7 @@ from pathlib import Path
 from gitwise.matching.intent_parser import parse_intent
 from gitwise.matching.matcher import IntentMatcher
 from gitwise.matching.push_resolver import resolve_push
+from gitwise.matching.pull_resolver import resolve_pull
 from gitwise.models import CommandPlan, MatchResult, ParsedIntent, RepoState
 from gitwise.recipes.loader import PUSH_RECIPE_IDS, Recipe, load_recipes
 from gitwise.recipes.render import render_commands, render_explanation
@@ -73,6 +74,9 @@ def build_plan(
     if recipe_id in PUSH_RECIPE_IDS:
         return _plan_push(intent, state, match, cwd=cwd)
 
+    if recipe_id == "pull_latest":
+        return _plan_pull(intent, state, match, cwd=cwd)
+
     if intent.wants_force_push and state.has_upstream:
         recipe = recipes["force_push_safe"]
         return _plan_from_recipe(recipe, intent, state, match, cwd=cwd)
@@ -109,6 +113,34 @@ def _plan_push(
         category="Sync",
         explanation=push.explanation,
         commands=push.commands,
+        danger=False,
+        confirmation_level="standard",
+        match_score=match.score,
+        matched_phrase=match.phrase,
+        warnings=warnings,
+    )
+
+
+def _plan_pull(
+    intent: ParsedIntent,
+    state: RepoState,
+    match: MatchResult,
+    *,
+    cwd=None,
+) -> CommandPlan:
+    if not state.in_repo:
+        raise ValueError("Cannot pull outside a git repository")
+
+    pull = resolve_pull(state, intent)
+    warnings: list[str] = []
+    if state.dirty_tree:
+        warnings.append("Uncommitted changes will be stashed before merge and restored after.")
+
+    return CommandPlan(
+        recipe_id="pull_latest",
+        category="Sync",
+        explanation=pull.explanation,
+        commands=pull.commands,
         danger=False,
         confirmation_level="standard",
         match_score=match.score,

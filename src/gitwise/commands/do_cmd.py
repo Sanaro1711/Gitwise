@@ -87,7 +87,7 @@ def run_do(
         from gitwise.workflows.safe_pull import run_safe_pull
 
         if plan.recipe_id == "pull_latest":
-            return run_safe_pull(cwd=cwd, dry_run=True, skip_confirm=True)
+            return run_safe_pull(cwd=cwd, intent=intent, dry_run=True, skip_confirm=True)
         print("(dry-run — no commands executed)")
         return 0
 
@@ -98,7 +98,7 @@ def run_do(
     if plan.recipe_id == "pull_latest":
         from gitwise.workflows.safe_pull import run_safe_pull
 
-        return run_safe_pull(cwd=cwd, dry_run=dry_run, skip_confirm=True)
+        return run_safe_pull(cwd=cwd, intent=intent, dry_run=dry_run, skip_confirm=True)
 
     result = execute_plan(plan, state, intent, cwd=cwd)
     if result.exit_code == 0:

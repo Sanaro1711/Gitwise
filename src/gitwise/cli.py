@@ -100,6 +100,12 @@ def pull(
         dir_okay=True,
         resolve_path=True,
     ),
+    from_branch: Optional[str] = typer.Option(
+        None,
+        "--from",
+        "-b",
+        help="Remote branch to merge into your current branch (e.g. main).",
+    ),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
@@ -114,7 +120,7 @@ def pull(
     ),
 ) -> None:
     """Guided pull: stash if needed, fetch, merge (no rebase), conflict help, restore stash."""
-    code = run_pull(cwd=path, dry_run=dry_run, yes=yes)
+    code = run_pull(cwd=path, from_branch=from_branch, dry_run=dry_run, yes=yes)
     raise typer.Exit(code=code)
 
 

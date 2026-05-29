@@ -88,8 +88,10 @@ recipes:
       - update from remote
       - download remote changes
       - pull down
-      - pull main
-      - pull branch
+      - pull from branch
+      - pull from main
+      - pull main into branch
+      - merge main into current branch
       - fetch and merge remote
       - update branch from remote
       - pull commits
@@ -102,9 +104,9 @@ recipes:
     danger: false
     command: "git fetch {remote} && git merge {upstream} --no-edit"
     explanation: >
-      Guided safe pull: stashes uncommitted work if needed, fetches from {upstream},
-      merges into '{branch}' (no rebase), walks you through conflicts if any,
-      then restores your stash when everything is safe.
+      Guided safe pull: stashes uncommitted work if needed, fetches from {remote},
+      merges into '{branch}' (no rebase). Default source is {upstream}.
+      To merge another branch: gw do "pull from branch 'main'".
     confirmation_level: standard
 
   - id: fetch_remote
