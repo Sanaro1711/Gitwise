@@ -8,7 +8,7 @@ APP_NAME = "Gitwise pull demo"
 VERSION = "1.0.0"
 
 # CONFLICT_LINE — change this line on main AND on your test branch (different text each time)
-GREETING = "Hello updated from main"
+GREETING = "Hello updated from main test"
 
 def describe() -> str:
     return f"{APP_NAME} v{VERSION}: {GREETING}"
