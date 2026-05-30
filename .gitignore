@@ -7,7 +7,12 @@ dist/
 build/
 .venv/
 venv/
+
+# Secrets and local env (never commit)
 .env
+.env.*
+!.env.example
+
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/

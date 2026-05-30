@@ -33,6 +33,20 @@ gw undo last
 gw undo last -n
 ```
 
+### `gw ask "question"`
+
+Repo-aware AI help via Gemini (free tier). Sends a compact, redacted snapshot of your repo — no credentials.
+
+```bash
+gw ask "what does ahead/behind mean?"
+gw ask "save all my code in the safest way"
+gw ask "should I pull first?" -n
+```
+
+Requires `GEMINI_API_KEY` — see [`docs/GEMINI.md`](docs/GEMINI.md).
+
+When the LLM suggests commands, Gitwise validates them against its own planner and only offers to run the **Gitwise-validated** plan.
+
 ### `gw pull`
 
 Guided safe pull with conflict help (also runs when you `gw do "pull"`):
@@ -156,6 +170,7 @@ Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md).
 - [x] `gw whereami`
 - [x] `gw save "message"` (add, commit, push current branch)
 - [x] `gw undo last` (interactive undo guide)
+- [x] `gw ask "question"` (Gemini-backed repo help + validated plans)
 - [x] `gw do "<intent>"` (matcher, confirm, run)
 - [x] ~30 recipes in YAML + single-quote values
 - [x] Auto `-u` on push (`push_resolver`)

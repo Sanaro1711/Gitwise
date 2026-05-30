@@ -8,6 +8,7 @@ from typing import Optional
 import typer
 
 from gitwise import __version__
+from gitwise.commands.ask_cmd import run_ask_cmd
 from gitwise.commands.do_cmd import run_do
 from gitwise.commands.pull_cmd import run_pull
 from gitwise.commands.whereami import run_whereami
@@ -89,6 +90,37 @@ def save(
 ) -> None:
     """Stage all changes, commit with your message, and push the current branch."""
     code = run_save(message, cwd=path, dry_run=dry_run, yes=yes)
+    raise typer.Exit(code=code)
+
+
+@app.command("ask")
+def ask(
+    question: str = typer.Argument(..., help='Your git question, e.g. "how do I undo my last commit?"'),
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        "-C",
+        help="Repository directory (default: current directory).",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Show the LLM answer and validation without running git.",
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation when running a validated plan.",
+    ),
+) -> None:
+    """Ask Gemini about your repo; validated action plans can be run via Gitwise."""
+    code = run_ask_cmd(question, cwd=path, dry_run=dry_run, yes=yes)
     raise typer.Exit(code=code)
 
 

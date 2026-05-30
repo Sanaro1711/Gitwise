@@ -13,8 +13,15 @@ QUICK START
   gw pull                  Guided pull with conflict help
   gw do "push to main"     Match intent to a recipe and run with confirmation
   gw undo last             Explain undo options and pick the safest one
+  gw ask "question"        Ask Gemini (repo-aware); run validated plans
 
 COMMANDS
+
+  ask QUESTION [-n] [-y] [-C PATH]
+      Ask Gemini about your repository. Uses a compact, redacted snapshot
+      (no credentials). For action requests, returns a plan + git commands.
+      Gitwise validates commands against its own planner before you can run them.
+      Requires GEMINI_API_KEY — see docs/GEMINI.md.
 
   whereami [-C PATH]
       Read-only repo snapshot: branch, upstream, ahead/behind, dirty files.
@@ -52,5 +59,6 @@ TIPS
   - gw save is the fast path when you just want add + commit + push.
   - gw pull handles merge conflicts step-by-step; gw do "pull latest" routes there too.
   - Destructive actions require typing 'yes' or explicit confirmation.
-  - See docs/ACCESS.md for remotes, auth, and GitHub setup.
+  - gw ask uses Gemini free tier (gemini-2.5-flash-lite); set GEMINI_API_KEY first.
+  - See docs/GEMINI.md for API key setup and docs/ACCESS.md for remotes/auth.
 """

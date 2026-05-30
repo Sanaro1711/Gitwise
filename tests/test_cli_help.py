@@ -13,6 +13,7 @@ def test_app_help_text_covers_commands() -> None:
     assert "gw undo last" in APP_HELP
     assert "gw pull" in APP_HELP
     assert "gw do" in APP_HELP
+    assert "gw ask" in APP_HELP
 
 
 def test_gw_help_shows_usage() -> None:
@@ -22,3 +23,4 @@ def test_gw_help_shows_usage() -> None:
     assert "save" in result.stdout.lower()
     assert "undo" in result.stdout.lower()
     assert "whereami" in result.stdout.lower()
+    assert "ask" in result.stdout.lower()
