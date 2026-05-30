@@ -13,6 +13,26 @@ pip install -e ".[dev]"
 
 ## Commands
 
+### `gw save "message"`
+
+Stage everything, commit, and push the **current branch** in one step:
+
+```bash
+gw save "fixed pull conflict handling"
+gw save "wip" -n          # dry-run: show steps only
+```
+
+Runs `git add .`, `git commit -m "…"`, then `git push` (adds `-u` automatically when your branch has no upstream).
+
+### `gw undo last`
+
+Interactive menu that explains undo options (soft/mixed/hard reset, revert, unstage, discard, abort merge/rebase) and helps you pick the safest one for your situation:
+
+```bash
+gw undo last
+gw undo last -n
+```
+
 ### `gw pull`
 
 Guided safe pull with conflict help (also runs when you `gw do "pull"`):
@@ -134,6 +154,8 @@ Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md).
 ### Shipped
 
 - [x] `gw whereami`
+- [x] `gw save "message"` (add, commit, push current branch)
+- [x] `gw undo last` (interactive undo guide)
 - [x] `gw do "<intent>"` (matcher, confirm, run)
 - [x] ~30 recipes in YAML + single-quote values
 - [x] Auto `-u` on push (`push_resolver`)
