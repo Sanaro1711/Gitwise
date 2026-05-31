@@ -12,6 +12,11 @@ venv/
 .env
 .env.*
 !.env.example
+**/gemini_api_key
+*.pem
+*.key
+secrets/
+credentials.json
 
 .pytest_cache/
 .ruff_cache/

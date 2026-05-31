@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
+
+from gitwise.llm.sanitize import redact_remote_url, redact_secrets
 
 from gitwise.models import RepoState
 from gitwise.output import format_whereami
@@ -51,7 +52,8 @@ def build_repo_context(*, cwd: Path | str | None = None) -> tuple[RepoState, str
         ]
     )
 
-    return state, "\n".join(sections)
+    context = redact_secrets("\n".join(sections))
+    return state, context
 
 
 def _redact_whereami(text: str) -> str:
@@ -65,12 +67,7 @@ def _redact_whereami(text: str) -> str:
 
 
 def _redact_remote_url(url: str) -> str:
-    if not url or url == "(none)":
-        return url or "(none)"
-    # https://user:token@github.com/org/repo.git -> https://github.com/org/repo.git
-    url = re.sub(r"https://[^@/]+@", "https://", url)
-    # git@github.com:org/repo.git — no secrets, keep as-is
-    return url
+    return redact_remote_url(url)
 
 
 def _recent_log(*, cwd: Path | str | None) -> str:
@@ -78,7 +75,7 @@ def _recent_log(*, cwd: Path | str | None) -> str:
         ["log", f"-{_MAX_LOG_LINES}", "--oneline", "--decorate"],
         cwd=cwd,
     )
-    return out or "(no commits yet)"
+    return redact_secrets(out or "(no commits yet)")
 
 
 def _branch_summary(*, cwd: Path | str | None) -> str:
@@ -94,10 +91,22 @@ def _branch_summary(*, cwd: Path | str | None) -> str:
 
 def _short_status(*, cwd: Path | str | None) -> str:
     out = run_git_optional(["status", "-sb"], cwd=cwd) or ""
-    lines = out.splitlines()[:_MAX_STATUS_LINES]
+    lines = [
+        line
+        for line in out.splitlines()[:_MAX_STATUS_LINES]
+        if not _is_sensitive_path(line)
+    ]
     if len(out.splitlines()) > _MAX_STATUS_LINES:
         lines.append("... (truncated)")
-    return "\n".join(lines) if lines else "(clean)"
+    text = "\n".join(lines) if lines else "(clean)"
+    return redact_secrets(text)
+
+
+def _is_sensitive_path(line: str) -> bool:
+    """Omit .env and key files from LLM context."""
+    lower = line.lower()
+    blocked = (".env", "gemini_api_key", ".pem", "id_rsa", "credentials", "secrets/")
+    return any(part in lower for part in blocked)
 
 
 def _merge_summary(*, cwd: Path | str | None) -> str:

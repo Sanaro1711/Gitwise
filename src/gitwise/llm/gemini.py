@@ -8,6 +8,7 @@ import urllib.request
 from dataclasses import dataclass
 
 from gitwise.llm.prompts import DEFAULT_MODEL, SYSTEM_PROMPT
+from gitwise.llm.sanitize import redact_secrets, sanitize_http_error_detail
 
 _API_BASE = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -26,31 +27,26 @@ def generate(
     *,
     api_key: str,
     user_message: str,
-    repo_context: str,
+    repo_context: str = "",
+    system_prompt: str | None = None,
     model: str = DEFAULT_MODEL,
     timeout: float = 60.0,
+    max_output_tokens: int = 1024,
 ) -> GeminiResponse:
     """Call Gemini generateContent with JSON response mode."""
-    url = f"{_API_BASE}/{model}:generateContent?key={api_key}"
+    system = system_prompt or SYSTEM_PROMPT
+    user_text = user_message
+    if repo_context:
+        user_text = f"Repository context:\n\n{repo_context}\n\n{user_message}"
+
+    url = f"{_API_BASE}/{model}:generateContent"
     body = {
-        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-        "contents": [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "text": (
-                            f"Repository context:\n\n{repo_context}\n\n"
-                            f"User question:\n{user_message}"
-                        )
-                    }
-                ],
-            }
-        ],
+        "systemInstruction": {"parts": [{"text": system}]},
+        "contents": [{"role": "user", "parts": [{"text": user_text}]}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "temperature": 0.2,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": max_output_tokens,
         },
     }
 
@@ -58,7 +54,10 @@ def generate(
     req = urllib.request.Request(
         url,
         data=data,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key,
+        },
         method="POST",
     )
 
@@ -66,7 +65,7 @@ def generate(
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             payload = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
+        detail = sanitize_http_error_detail(exc.read().decode("utf-8", errors="replace"))
         raise GeminiError(_format_http_error(exc.code, detail)) from exc
     except urllib.error.URLError as exc:
         raise GeminiError(f"Network error calling Gemini: {exc.reason}") from exc
@@ -94,5 +93,5 @@ def _format_http_error(code: int, detail: str) -> str:
         return "Gemini rate limit reached (free tier). Wait a minute and try again."
     if code == 403:
         return "Gemini API access denied. Verify your API key at https://aistudio.google.com/apikey"
-    snippet = detail[:300].replace("\n", " ")
-    return f"Gemini API error ({code}): {snippet}"
+    snippet = sanitize_http_error_detail(detail).replace("\n", " ")
+    return f"Gemini API error ({code}): {snippet[:200]}"

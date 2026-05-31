@@ -14,6 +14,7 @@ def test_app_help_text_covers_commands() -> None:
     assert "gw pull" in APP_HELP
     assert "gw do" in APP_HELP
     assert "gw ask" in APP_HELP
+    assert "SECURITY" in APP_HELP
 
 
 def test_gw_help_shows_usage() -> None:

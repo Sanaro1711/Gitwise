@@ -1,64 +1,64 @@
 """Comprehensive help text for `gw --help`."""
 
 APP_HELP = """\
-Gitwise (gw) - Git workflow assistant
+Gitwise (gw) - safe git workflow CLI
 
-Inspect your repo, run safe git workflows from plain English, or use shortcut
-commands for common tasks. Gitwise only runs git in the directory you choose;
-it uses your existing SSH keys or HTTPS credentials (no separate GitHub login).
+Run git in plain English with explanation and confirmation before anything
+mutates your repo. Works in any git repository on your machine.
 
 QUICK START
-  gw whereami              See branch, remote, sync state, working tree
-  gw save "your message"   Stage all, commit, and push current branch
-  gw pull                  Guided pull with conflict help
-  gw do "push to main"     Match intent to a recipe and run with confirmation
-  gw undo last             Explain undo options and pick the safest one
-  gw ask "question"        Ask Gemini (repo-aware); run validated plans
+  gw whereami                    Branch, remote, sync state, dirty files
+  gw save "your message"         Stage all, commit, push current branch
+  gw pull                        Safe pull with conflict help
+  gw do "push to main"           Natural-language workflows (~30 recipes)
+  gw undo last                   Pick the safest undo option
+  gw ask "your question"         Optional AI help (needs GEMINI_API_KEY)
+
+INSTALL (after fork/clone)
+  python -m venv .venv
+  .venv\\Scripts\\activate          Windows
+  source .venv/bin/activate       Linux/macOS
+  pip install -e .
+  copy .env.example .env            optional, for gw ask only
+
+SECRETS
+  Never commit .env or API keys. See docs/SECURITY.md.
+  Gemini key: .env, GEMINI_API_KEY env var, or ~/.gitwise/gemini_api_key
 
 COMMANDS
 
-  ask QUESTION [-n] [-y] [-C PATH]
-      Ask Gemini about your repository. Uses a compact, redacted snapshot
-      (no credentials). For action requests, returns a plan + git commands.
-      Gitwise validates commands against its own planner before you can run them.
-      Requires GEMINI_API_KEY — see docs/GEMINI.md.
-
   whereami [-C PATH]
-      Read-only repo snapshot: branch, upstream, ahead/behind, dirty files.
+      Read-only snapshot of the current repository.
 
   save MESSAGE [-n] [-y] [-C PATH]
-      Stage everything (git add .), commit with MESSAGE, push current branch.
-      Adds -u automatically when your branch has no upstream yet.
+      git add .  ->  commit  ->  push (current branch, auto -u if needed).
 
   pull [--from BRANCH] [-n] [-y] [-C PATH]
-      Safe pull: stash if dirty -> fetch -> merge (no rebase) -> conflict guide
-      -> restore stash. Use --from main to merge origin/main explicitly.
+      Stash if dirty, fetch, merge (no rebase), conflict guide, restore stash.
 
   do INTENT [-n] [-y] [-C PATH]
-      Natural-language git workflows (~30 recipes). Always shows why and asks
-      before running (unless -y). Wrap intent in double quotes; put names and
-      messages in single quotes inside:
+      Match intent to a recipe. Double quotes outside; single quotes for values:
 
         gw do "commit 'fix login bug'"
-        gw do "create branch 'feature/login'"
+        gw do "create branch 'feature/x'"
         gw do "pull from branch 'main'"
-        gw do "stash my changes with message 'wip'"
 
   undo [last] [-n] [-y] [-C PATH]
-      Interactive menu explaining undo options (reset, revert, unstage, discard,
-      abort merge/rebase) and helps you pick the best choice for your situation.
+      Interactive menu: reset, revert, unstage, discard, abort merge/rebase.
+
+  ask QUESTION [-n] [-y] [-C PATH]
+      Ask Gemini about your repo (redacted context). Action plans are validated
+      against Gitwise before you can run them. Setup: docs/GEMINI.md
 
 GLOBAL OPTIONS
-  -C, --path PATH   Run in a different repository directory
-  -n, --dry-run     Show the plan without executing git
-  -y, --yes         Skip confirmation prompts (use with care)
-  -V, --version     Show version
+  -C, --path PATH     Repository directory (default: current directory)
+  -n, --dry-run       Show plan only; do not run git
+  -y, --yes           Skip confirmation (destructive ops still need 'yes')
+  -V, --version       Print version
 
-TIPS
-  - Use gw whereami first when unsure about branch or sync state.
-  - gw save is the fast path when you just want add + commit + push.
-  - gw pull handles merge conflicts step-by-step; gw do "pull latest" routes there too.
-  - Destructive actions require typing 'yes' or explicit confirmation.
-  - gw ask uses Gemini free tier (gemini-2.5-flash-lite); set GEMINI_API_KEY first.
-  - See docs/GEMINI.md for API key setup and docs/ACCESS.md for remotes/auth.
+DOCUMENTATION
+  docs/README.md        Index of all docs
+  docs/SECURITY.md      Secrets, privacy, safety model
+  docs/GEMINI.md        Optional API key for gw ask
+  docs/ROADMAP.md       Future features
 """

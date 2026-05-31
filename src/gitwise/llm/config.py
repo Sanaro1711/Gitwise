@@ -16,16 +16,18 @@ def api_key_help() -> str:
     return (
         "Gemini API key not found.\n\n"
         "Set it in ONE of these places (pick one):\n\n"
-        "  1. Environment variable (recommended):\n"
-        "       Windows PowerShell:  $env:GEMINI_API_KEY = \"your-key\"\n"
-        "       Linux/macOS:         export GEMINI_API_KEY=\"your-key\"\n\n"
-        "  2. Key file (one line, no quotes):\n"
-        f"       {_KEY_FILE_NAMES[0]}\n"
-        f"       or {_KEY_FILE_NAMES[1]}\n\n"
-        "  3. Project .env file (gitignored):\n"
-        "       GEMINI_API_KEY=your-key\n\n"
-        "Get a free key at: https://aistudio.google.com/apikey\n"
-        "Gitwise uses gemini-2.5-flash-lite (free tier) with a small context to minimize usage."
+        "  1. Project .env file (recommended after fork):\n"
+        "       copy .env.example .env\n"
+        "       GEMINI_API_KEY=your-key\n"
+        "       (.env is gitignored — safe to use locally)\n\n"
+        "  2. Environment variable:\n"
+        "       Windows:  $env:GEMINI_API_KEY = \"your-key\"\n"
+        "       Linux:    export GEMINI_API_KEY=\"your-key\"\n\n"
+        "  3. Key file (one line, no quotes):\n"
+        f"       {_KEY_FILE_NAMES[0]}\n\n"
+        "Get a free key: https://aistudio.google.com/apikey\n"
+        "Details: docs/GEMINI.md and docs/SECURITY.md\n"
+        "Note: gw ask is optional — all other commands work without a key."
     )
 
 

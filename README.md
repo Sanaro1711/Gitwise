@@ -1,195 +1,175 @@
 # Gitwise
 
-Git workflow assistant CLI. Inspects your local repository and maps plain English to the right git commands — with an explanation and confirmation before anything runs.
+Safe git workflow CLI. Inspect your repo, run commands in plain English, and get confirmation before anything changes.
 
-## Install (development)
+Works in **any git repository**. Fork, install, and use locally — no cloud account required except optionally for `gw ask`.
+
+## Requirements
+
+- Python 3.11+
+- [Git](https://git-scm.com/) on your PATH
+- Optional: [Gemini API key](https://aistudio.google.com/apikey) for `gw ask` only
+
+## Quick start
+
+### 1. Clone or fork
 
 ```bash
+git clone https://github.com/YOUR_USER/Gitwise.git
 cd Gitwise
+```
+
+### 2. Install
+
+**Windows (PowerShell):**
+
+```powershell
 python -m venv .venv
-.venv\Scripts\activate   # Windows
-pip install -e ".[dev]"
+.venv\Scripts\Activate.ps1
+pip install -e .
 ```
 
-## Commands
-
-### `gw save "message"`
-
-Stage everything, commit, and push the **current branch** in one step:
+**Linux / macOS:**
 
 ```bash
-gw save "fixed pull conflict handling"
-gw save "wip" -n          # dry-run: show steps only
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
-Runs `git add .`, `git commit -m "…"`, then `git push` (adds `-u` automatically when your branch has no upstream).
-
-### `gw undo last`
-
-Interactive menu that explains undo options (soft/mixed/hard reset, revert, unstage, discard, abort merge/rebase) and helps you pick the safest one for your situation:
-
-```bash
-gw undo last
-gw undo last -n
-```
-
-### `gw ask "question"`
-
-Repo-aware AI help via Gemini (free tier). Sends a compact, redacted snapshot of your repo — no credentials.
-
-```bash
-gw ask "what does ahead/behind mean?"
-gw ask "save all my code in the safest way"
-gw ask "should I pull first?" -n
-```
-
-Requires `GEMINI_API_KEY` — see [`docs/GEMINI.md`](docs/GEMINI.md).
-
-When the LLM suggests commands, Gitwise validates them against its own planner and only offers to run the **Gitwise-validated** plan.
-
-### `gw pull`
-
-Guided safe pull with conflict help (also runs when you `gw do "pull"`):
-
-```bash
-gw pull
-gw pull -n          # dry-run: show steps only
-gw pull -C path/to/repo
-```
-
-Flow: check branch → stash if dirty → fetch → merge (no rebase) → step-by-step conflict guide → restore stash (kept until you confirm drop).
-
-Merge **your upstream** by default, or a **named remote branch**:
-
-```bash
-gw pull                              # merge your branch's upstream
-gw do "pull from branch 'main'"      # merge origin/main into current branch
-gw pull --from main                  # same, via flag
-```
-
-### `gw do "<intent>"`
-
-One quoting rule: wrap the intent in **double quotes** for the shell; put **names and messages in single quotes**:
-
-```bash
-gw do "commit 'fix login bug'"
-gw do "create branch 'feature/login'"
-gw do "delete branch 'old-hotfix'"
-gw do "push to main"
-gw do "stash my changes" -n
-```
-
-On Windows PowerShell this avoids the nested-double-quote problem. Single-quoted segments are mapped automatically:
-
-| You say | Value used for |
-|---------|----------------|
-| `commit '...'` | commit message |
-| `create branch '...'` | branch name |
-| `delete branch '...'` | branch name |
-| `stash ... '...'` | stash message |
-| `discard ... 'path'` | file path |
-| `clone 'url'` | repository URL |
-
-`-u` for push is chosen automatically from upstream tracking (see `push_resolver`).
-
-### `gw whereami`
-
-Full breakdown of the repo you are standing in (read-only git calls only):
-
-```text
-Repo: Gitwise
-Branch: master
-Remote: origin
-Upstream: (not set)
-
-Working tree:
-  Clean — no uncommitted changes
-
-Sync state:
-  No upstream branch configured for this branch.
-  First push usually needs: git push -u <remote> <branch>
-```
+### 3. Verify
 
 ```bash
 gw whereami
-gw whereami -C path/to/repo
+gw --help
 ```
 
-## Remotes and GitHub access
+Run these inside any git repo. You should see branch, remote, and sync state.
 
-Gitwise does **not** use a separate GitHub login. It reads your repo’s **configured remote** (`origin`, URL, upstream) and runs the same `git` commands you would — using **your existing** SSH keys or HTTPS credentials.
+### 4. Optional — enable `gw ask` (AI)
 
-See [`docs/ACCESS.md`](docs/ACCESS.md) for how auth works and how to verify setup.
+```powershell
+copy .env.example .env          # Windows
+# cp .env.example .env          # Linux/macOS
+```
 
-`gw whereami` now shows **Remote URL** so you can see which host (e.g. GitHub) git will talk to.
+Edit `.env` and add your free Gemini key:
 
-**Automatic `-u`:** when `gw do` ships, push uses [`push_resolver`](src/gitwise/matching/push_resolver.py) — `-u` is added only when your branch has no upstream (or you explicitly ask for it), not because you said a magic phrase.
+```
+GEMINI_API_KEY=your-key-here
+```
 
-## Privacy and safety
-
-- Gitwise only runs git in the **directory you are in** (or `-C path`). It does not scan your home folder or read unrelated files.
-- No network API calls in the MVP.
-- Destructive commands (`gw do`, coming later) always ask before running.
-- If you want the agent or a script to inspect a **personal** repository, say so explicitly first.
-
-## Recipes
-
-Workflow definitions live in [`src/gitwise/recipes/recipes.yaml`](src/gitwise/recipes/recipes.yaml). The count (~30) is a rough guide — add more as needed.
-
-Validate:
+`.env` is gitignored — your key stays local. See [docs/GEMINI.md](docs/GEMINI.md).
 
 ```bash
+gw ask "what branch am I on?"
+```
+
+All other commands work **without** an API key.
+
+---
+
+## Commands
+
+| Command | What it does |
+|---------|----------------|
+| `gw whereami` | Read-only repo snapshot |
+| `gw save "msg"` | `git add .` → commit → push current branch |
+| `gw pull` | Safe pull with stash + conflict guide |
+| `gw do "intent"` | ~30 natural-language workflows |
+| `gw undo last` | Interactive undo menu |
+| `gw ask "question"` | Repo-aware AI help (optional) |
+
+Global flags: `-C path` (repo directory), `-n` (dry-run), `-y` (skip confirm).
+
+Full reference: `gw --help`
+
+### Examples
+
+```bash
+gw save "fixed login bug"
+gw pull
+gw pull --from main
+gw do "commit 'wip refactor'"
+gw do "create branch 'feature/login'"
+gw undo last
+gw ask "should I pull before pushing?" -n
+```
+
+**Quoting (PowerShell):** wrap the whole intent in double quotes; put messages and branch names in **single quotes** inside:
+
+```bash
+gw do "commit 'fix bug'"
+gw do "delete branch 'old-hotfix'"
+```
+
+---
+
+## Security and secrets
+
+Gitwise never stores git passwords or SSH keys. Optional Gemini keys go in `.env` (gitignored) or `GEMINI_API_KEY`.
+
+**Before you push to GitHub:** confirm `.env` is not tracked:
+
+```bash
+git status    # .env should NOT appear
+```
+
+Read [docs/SECURITY.md](docs/SECURITY.md) for the full safety model.
+
+| Safe to commit | Never commit |
+|----------------|--------------|
+| `.env.example` | `.env` |
+| Source code | `gemini_api_key`, `*.pem`, tokens |
+
+---
+
+## How it works
+
+**`gw do`** matches your wording to recipes in [`recipes.yaml`](src/gitwise/recipes/recipes.yaml) using fuzzy matching, then runs:
+
+```text
+pre-checks → confirm → git commands → post-checks → failure help
+```
+
+**`gw ask`** sends a small redacted repo snapshot to Gemini, validates any suggested commands against the same planner, and only offers to run Gitwise-approved plans.
+
+Details: [docs/EXECUTION_PIPELINE.md](docs/EXECUTION_PIPELINE.md)
+
+---
+
+## Documentation
+
+| Doc | Topic |
+|-----|-------|
+| [docs/README.md](docs/README.md) | Documentation index |
+| [docs/SECURITY.md](docs/SECURITY.md) | Secrets, privacy, command safety |
+| [docs/GEMINI.md](docs/GEMINI.md) | API key setup for `gw ask` |
+| [docs/ACCESS.md](docs/ACCESS.md) | Remotes, GitHub auth |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Future features |
+| `gw --help` | CLI reference |
+
+---
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+python -m pytest tests/ -q
 python src/gitwise/recipes/validate_recipes.py
 ```
 
-## Intent matching (`gw do`)
+---
 
-`rapidfuzz` matches your wording against recipe phrase lists. **Single quotes** inside the intent carry the value (message, branch name, path, URL). Similar phrases work without being listed verbatim:
+## Roadmap (summary)
 
-- `"push this to main"` → fuzzy **push** + branch `main`
-- `"commit 'fix bug'"` → message from single quotes
-- `-u` is chosen from **repo state** (`has_upstream`), not from phrasing
+**Shipped:** `whereami`, `do`, `pull`, `save`, `undo`, `ask`, recipes, validation pipeline.
 
-See [`src/gitwise/matching/intent_parser.py`](src/gitwise/matching/intent_parser.py).
+**Planned:** `gw explain-state`, `gw explain`, `gw fix`, merge-into-any-branch, GitHub PR via `gh`, guided rebase.
 
-## Execution pipeline (`gw do`)
+Full list: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-Every run follows:
-
-**pre-checks → confirm → command → post-checks → failure handler**
-
-- **Pre-checks** catch problems early (e.g. switch to a branch that does not exist).
-- **Failure handler** reads git stderr, explains what went wrong, and suggests `gw do` next steps.
-
-Details: [`docs/EXECUTION_PIPELINE.md`](docs/EXECUTION_PIPELINE.md).
-
-## Roadmap
-
-### Shipped
-
-- [x] `gw whereami`
-- [x] `gw save "message"` (add, commit, push current branch)
-- [x] `gw undo last` (interactive undo guide)
-- [x] `gw ask "question"` (Gemini-backed repo help + validated plans)
-- [x] `gw do "<intent>"` (matcher, confirm, run)
-- [x] ~30 recipes in YAML + single-quote values
-- [x] Auto `-u` on push (`push_resolver`)
-- [x] Pre-checks / post-checks / failure handler on `gw do`
-
-### Not built yet
-
-- [ ] `gw explain "<command>"` — no CLI command; only short text in `gw do` plans
-- [ ] `gw fix "<error>"` — no CLI command; failures on `gw do` already suggest fixes
-
-### Merge (planned)
-
-- [x] Basic: `merge_into_default` recipe (`switch` + `git merge`)
-- [x] `abort_merge_or_rebase` recipe
-- [ ] Merge feature → arbitrary branch (not only default)
-- [ ] `gw do` after conflict: stage resolved files + complete merge commit
-- [ ] Richer merge pre-checks (uncommitted, already up to date)
-- [ ] Post-check: verify merge commit / no lingering `MERGE_HEAD`
-- [ ] `gw fix` entries for common merge error strings
+---
 
 ## License
 

@@ -1,83 +1,67 @@
-# Gemini API setup (gw ask)
+# Gemini setup for `gw ask`
 
-Gitwise uses Google's Gemini API for `gw ask`. The integration is minimal:
+`gw ask` is **optional**. All other Gitwise commands work offline with no API key.
 
-- **Model:** `gemini-2.5-flash-lite` (free tier, low cost)
-- **No SDK dependency** — plain HTTPS via Python stdlib
-- **Small context** — recent commits, branch list, short status (not full history)
-- **Redacted** — remote URLs strip embedded credentials; no git user/email sent
+## 1. Get a free key
 
-## Get a free API key
+Create a key at [Google AI Studio](https://aistudio.google.com/apikey) (no credit card on free tier).
 
-1. Open [Google AI Studio](https://aistudio.google.com/apikey)
-2. Create an API key (no credit card required for free tier)
-3. Store it using **one** of the options below
+## 2. Store the key (pick one)
 
-## Where to put your API key
-
-### Option 1: Environment variable (recommended)
-
-**Windows PowerShell (current session):**
-
-```powershell
-$env:GEMINI_API_KEY = "your-key-here"
-```
-
-**Windows PowerShell (persistent — add to your profile):**
-
-```powershell
-[System.Environment]::SetEnvironmentVariable("GEMINI_API_KEY", "your-key-here", "User")
-```
-
-**Linux / macOS:**
+### A. Project `.env` (easiest after fork)
 
 ```bash
-export GEMINI_API_KEY="your-key-here"
+copy .env.example .env        # Windows
+cp .env.example .env          # Linux / macOS
 ```
 
-### Option 2: Key file
-
-Create a file with your key on a single line (no quotes):
-
-```
-C:\Users\YOU\.gitwise\gemini_api_key
-```
-
-On Linux/macOS: `~/.gitwise/gemini_api_key`
-
-### Option 3: Project `.env` (gitignored)
-
-In your repo root:
+Edit `.env`:
 
 ```
 GEMINI_API_KEY=your-key-here
 ```
 
-## Usage
+`.env` is gitignored — it will not be committed.
 
-```bash
-gw ask "what does ahead/behind mean?"
-gw ask "save all my code in the safest way"
-gw ask "should I pull before pushing?" -n    # dry-run: no execution
+### B. Environment variable
+
+```powershell
+# Windows PowerShell (current session)
+$env:GEMINI_API_KEY = "your-key-here"
 ```
 
-When the LLM suggests git commands, Gitwise:
+```bash
+# Linux / macOS
+export GEMINI_API_KEY="your-key-here"
+```
 
-1. Checks commands are safe (git-only, no credentials/shell tricks)
-2. Compares them to what `gw do` / `gw save` would run
-3. Offers to run the **Gitwise-validated** plan — never raw unverified LLM commands
+### C. Key file in your home directory
 
-## Privacy
+One line, no quotes:
 
-- Only local git metadata is sent to Gemini
-- No passwords, tokens, or full `.git/config` contents
-- HTTPS remote URLs are redacted if they contain `user:pass@`
+- Windows: `%USERPROFILE%\.gitwise\gemini_api_key`
+- Linux/macOS: `~/.gitwise/gemini_api_key`
+
+## 3. Try it
+
+```bash
+gw ask "what branch am I on?"
+gw ask "should I pull before pushing?" -n
+```
+
+## How it stays safe
+
+- Model: `gemini-2.5-flash-lite` (free tier, minimal tokens)
+- Context is compact and redacted — see [SECURITY.md](SECURITY.md)
+- LLM-suggested commands are validated against Gitwise's planner
+- Only validated plans can run; raw LLM output is never executed
+- API key is sent in an HTTP header, not the URL
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| API key not found | Set `GEMINI_API_KEY` or create `~/.gitwise/gemini_api_key` |
+| Message | Fix |
+|---------|-----|
+| API key not found | Create `.env` from `.env.example` or set `GEMINI_API_KEY` |
 | Invalid API key | Regenerate at AI Studio |
-| Rate limit (429) | Free tier daily limit — wait and retry |
-| Unverified plan | Rephrase as `gw do "..."` or ask for explanation only |
+| Rate limit (429) | Free tier quota — wait and retry |
+| Unverified plan | Use `gw do "…"` or rephrase your question |

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from gitwise.llm.config import load_api_key
-from gitwise.llm.context import _redact_remote_url
+from gitwise.llm.sanitize import redact_remote_url
 from gitwise.llm.response import parse_ask_response
 from gitwise.llm.validator import validate_llm_plan
 from gitwise.models import RepoState
@@ -35,8 +35,8 @@ def _state(**kwargs) -> RepoState:
 
 def test_redact_remote_url_strips_credentials() -> None:
     url = "https://user:secret@github.com/org/repo.git"
-    assert "secret" not in _redact_remote_url(url)
-    assert "github.com/org/repo.git" in _redact_remote_url(url)
+    assert "secret" not in redact_remote_url(url)
+    assert "github.com/org/repo.git" in redact_remote_url(url)
 
 
 def test_parse_explain_response() -> None:
@@ -107,4 +107,4 @@ def test_load_api_key_from_file(tmp_path: Path, monkeypatch) -> None:
         "gitwise.llm.config._KEY_FILE_NAMES",
         (key_file,),
     )
-    assert load_api_key() == "file-key"
+    assert load_api_key(cwd=tmp_path) == "file-key"
