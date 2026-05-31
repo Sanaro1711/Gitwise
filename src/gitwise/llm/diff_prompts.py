@@ -3,8 +3,8 @@
 DIFF_SYSTEM_PROMPT = """\
 You summarize git diffs for developers using Gitwise.
 
-You receive: ref labels, file stats, file list, and a truncated patch.
-Explain what actually changed, why it matters, and what areas are affected.
+You receive: ref labels, file stats, file list, and a unified code diff (lines starting with + and -).
+Use the actual code changes to explain behavior, not just filenames.
 
 Rules:
 - Base analysis ONLY on the diff provided. Do not invent files or features.

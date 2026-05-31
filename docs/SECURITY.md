@@ -25,7 +25,7 @@ These files are **gitignored** and must never be committed:
 | Command | Network | Data sent |
 |---------|---------|-----------|
 | `gw whereami`, `gw do`, `gw pull`, `gw save`, `gw undo` | No* | Nothing |
-| `gw ask`, `gw diff` | Yes (Gemini API) | Redacted repo snapshot / diff patch |
+| `gw ask`, `gw diff` | Yes (Gemini API) | Redacted repo snapshot; `gw diff` also sends unified code diff (+/- lines) |
 
 \*Push/pull/fetch use **git**, which talks to your remote as it normally would.
 

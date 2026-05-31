@@ -11,13 +11,11 @@ from pathlib import Path
 from gitwise.llm.config import MissingApiKeyError, require_api_key
 from gitwise.llm.diff_prompts import DIFF_SYSTEM_PROMPT
 from gitwise.llm.gemini import GeminiError, generate
-from gitwise.llm.sanitize import redact_secrets
+from gitwise.llm.patch_context import _MAX_FILES, build_safe_patch, list_changed_files
 from gitwise.repo.git_runner import GitError, run_git, run_git_optional
 from gitwise.repo.inspector import RepoInspector
 
 _WORKTREE = ("worktree", ".", "WORKTREE")
-_MAX_PATCH = 12_000
-_SENSITIVE = (".env", "gemini_api_key", ".pem", "id_rsa", "credentials")
 
 
 @dataclass
@@ -71,11 +69,11 @@ def run_diff(
         return 1
 
     stats = _diff_stats(from_ref, to_ref, worktree=to_worktree, cwd=work)
-    names = _diff_names(from_ref, to_ref, worktree=to_worktree, cwd=work)
-    patch = _diff_patch(from_ref, to_ref, worktree=to_worktree, cwd=work)
+    names = list_changed_files(from_ref, to_ref, worktree=to_worktree, cwd=work)
+    patch = build_safe_patch(from_ref, to_ref, worktree=to_worktree, cwd=work)
 
     if dry_run:
-        _print_dry_run(from_label, to_label, stats, names)
+        _print_dry_run(from_label, to_label, stats, names, patch)
         return 0
 
     try:
@@ -129,30 +127,6 @@ def _parse_shortstat(text: str) -> DiffStats:
     return DiffStats(files=files, insertions=ins, deletions=dels)
 
 
-def _diff_names(from_ref: str, to_ref: str, *, worktree: bool, cwd: Path) -> list[str]:
-    args = ["diff", "--name-only", from_ref]
-    if not worktree:
-        args.append(to_ref)
-    out = run_git_optional(args, cwd=cwd) or ""
-    return [n for n in out.splitlines() if n.strip() and not _is_sensitive(n)]
-
-
-def _diff_patch(from_ref: str, to_ref: str, *, worktree: bool, cwd: Path) -> str:
-    args = ["diff", from_ref]
-    if not worktree:
-        args.append(to_ref)
-    out = run_git_optional(args, cwd=cwd) or ""
-    out = redact_secrets(out)
-    if len(out) > _MAX_PATCH:
-        out = out[:_MAX_PATCH] + "\n... (patch truncated for LLM)"
-    return out
-
-
-def _is_sensitive(path: str) -> bool:
-    lower = path.lower()
-    return any(s in lower for s in _SENSITIVE)
-
-
 def _summarize(
     api_key: str,
     from_label: RefLabel,
@@ -168,7 +142,8 @@ def _summarize(
         + f"\n\nStats: {stats.files} files, +{stats.insertions}/-{stats.deletions}\n"
         f"Files:\n" + "\n".join(names[:40])
         + (f"\n... and {len(names) - 40} more" if len(names) > 40 else "")
-        + f"\n\nPatch:\n{patch or '(empty)'}"
+        + f"\n\nCode diff (unified patch with + additions and - deletions):\n"
+        f"{patch or '(empty)'}"
     )
     raw = generate(
         api_key=api_key,
@@ -256,6 +231,7 @@ def _print_dry_run(
     to_label: RefLabel,
     stats: DiffStats,
     names: list[str],
+    patch: str,
 ) -> None:
     print("=== gw diff (dry-run) ===\n")
     print(f"From: {from_label.display} - {from_label.detail}")
@@ -267,4 +243,9 @@ def _print_dry_run(
             print(f"  {n}")
         if len(names) > 20:
             print(f"  ... and {len(names) - 20} more")
-    print("\n(dry-run — LLM summary not requested)")
+    code_files = min(len(names), _MAX_FILES)
+    print(
+        f"\nLLM input: stats + file list + up to {code_files} file(s) of unified diff code "
+        f"({len(patch)} chars, sensitive paths excluded)"
+    )
+    print("(dry-run — LLM summary not requested)")

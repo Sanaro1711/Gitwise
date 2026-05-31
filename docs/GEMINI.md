@@ -55,7 +55,7 @@ gw diff abc1234 HEAD -n
 - Model: `gemini-2.5-flash-lite` (free tier, minimal tokens)
 - Context is compact and redacted — see [SECURITY.md](SECURITY.md)
 - `gw ask`: LLM commands validated against Gitwise planner before run
-- `gw diff`: patch truncated; `.env` and key files excluded from analysis
+- `gw diff`: git stats + **unified diff code** (+/- lines, up to ~18k chars, 20 files). `.env`, keys, and credentials stripped.
 - API key is sent in an HTTP header, not the URL
 
 ## Troubleshooting
