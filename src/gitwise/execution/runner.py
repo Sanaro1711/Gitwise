@@ -31,9 +31,11 @@ def run_commands(
             args,
             cwd=work_dir,
             capture_output=True,
-            text=True,
             shell=False,
             check=False,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
         )
         result = RunResult(
             command=cmd,

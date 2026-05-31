@@ -9,6 +9,7 @@ import typer
 
 from gitwise import __version__
 from gitwise.commands.ask_cmd import run_ask_cmd
+from gitwise.commands.diff_cmd import run_diff_cmd
 from gitwise.commands.do_cmd import run_do
 from gitwise.commands.pull_cmd import run_pull
 from gitwise.commands.whereami import run_whereami
@@ -90,6 +91,35 @@ def save(
 ) -> None:
     """Stage all changes, commit with your message, and push the current branch."""
     code = run_save(message, cwd=path, dry_run=dry_run, yes=yes)
+    raise typer.Exit(code=code)
+
+
+@app.command("diff")
+def diff(
+    from_ref: str = typer.Argument(..., help='Start ref, e.g. HEAD~2, abc1234, v1.0'),
+    to_ref: Optional[str] = typer.Argument(
+        None,
+        help='End ref (default: worktree). Use HEAD, a tag, or "worktree" for uncommitted changes.',
+    ),
+    path: Optional[Path] = typer.Option(
+        None,
+        "--path",
+        "-C",
+        help="Repository directory (default: current directory).",
+        exists=True,
+        file_okay=False,
+        dir_okay=True,
+        resolve_path=True,
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Show git diff stats only; skip LLM summary.",
+    ),
+) -> None:
+    """Summarize what changed between two refs (or ref vs working tree) using Gemini."""
+    code = run_diff_cmd(from_ref, to_ref, cwd=path, dry_run=dry_run)
     raise typer.Exit(code=code)
 
 

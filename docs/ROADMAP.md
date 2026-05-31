@@ -12,6 +12,7 @@ What is shipped today and what could come next.
 | Quick save | `gw save "msg"` | add + commit + push current branch |
 | Undo guide | `gw undo last` | Interactive reset/revert/unstage menu |
 | AI assistant | `gw ask "…"` | Gemini, validated plans only |
+| Smart diff report | `gw diff FROM [TO]` | Git diff + Gemini summary |
 | Auto upstream on push | (in `gw do` / `gw save`) | `-u` when branch has no upstream |
 | Execution pipeline | (all runners) | pre-check → confirm → run → post-check → failures |
 

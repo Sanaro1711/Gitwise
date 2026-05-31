@@ -13,13 +13,14 @@ QUICK START
   gw do "push to main"           Natural-language workflows (~30 recipes)
   gw undo last                   Pick the safest undo option
   gw ask "your question"         Optional AI help (needs GEMINI_API_KEY)
+  gw diff HEAD~2                 Smart diff summary (ref vs working tree)
 
 INSTALL (after fork/clone)
   python -m venv .venv
   .venv\\Scripts\\activate          Windows
   source .venv/bin/activate       Linux/macOS
   pip install -e .
-  copy .env.example .env            optional, for gw ask only
+  copy .env.example .env            optional, for gw ask / gw diff
 
 SECRETS
   Never commit .env or API keys. See docs/SECURITY.md.
@@ -50,6 +51,14 @@ COMMANDS
       Ask Gemini about your repo (redacted context). Action plans are validated
       against Gitwise before you can run them. Setup: docs/GEMINI.md
 
+  diff FROM [TO] [-n] [-C PATH]
+      Compare git refs; Gemini summarizes changes, risks, and next steps.
+      TO defaults to worktree (staged + unstaged). Examples:
+
+        gw diff HEAD~2
+        gw diff abc1234 HEAD
+        gw diff v1.0 v1.1 -n
+
 GLOBAL OPTIONS
   -C, --path PATH     Repository directory (default: current directory)
   -n, --dry-run       Show plan only; do not run git
@@ -59,6 +68,6 @@ GLOBAL OPTIONS
 DOCUMENTATION
   docs/README.md        Index of all docs
   docs/SECURITY.md      Secrets, privacy, safety model
-  docs/GEMINI.md        Optional API key for gw ask
+  docs/GEMINI.md        Optional API key for gw ask / gw diff
   docs/ROADMAP.md       Future features
 """

@@ -6,6 +6,9 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+# Git emits UTF-8; Windows defaults to cp1252 and crashes on diff patches.
+_SUBPROCESS_TEXT = {"text": True, "encoding": "utf-8", "errors": "replace"}
+
 
 class GitError(Exception):
     """Git command failed or git is not available."""
@@ -32,10 +35,10 @@ def run_git_result(
             cmd,
             cwd=work_dir,
             capture_output=True,
-            text=True,
             timeout=timeout,
             shell=False,
             check=False,
+            **_SUBPROCESS_TEXT,
         )
     except FileNotFoundError:
         return GitResult(127, "", "git is not installed or not on PATH")
@@ -62,10 +65,10 @@ def run_git(
             cmd,
             cwd=cwd,
             capture_output=True,
-            text=True,
             timeout=timeout,
             shell=False,
             check=False,
+            **_SUBPROCESS_TEXT,
         )
     except FileNotFoundError as exc:
         raise GitError("git is not installed or not on PATH") from exc

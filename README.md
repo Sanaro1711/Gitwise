@@ -8,7 +8,7 @@ Works in **any git repository**. Fork, install, and use locally — no cloud acc
 
 - Python 3.11+
 - [Git](https://git-scm.com/) on your PATH
-- Optional: [Gemini API key](https://aistudio.google.com/apikey) for `gw ask` only
+- Optional: [Gemini API key](https://aistudio.google.com/apikey) for `gw ask` and `gw diff`
 
 ## Quick start
 
@@ -46,7 +46,7 @@ gw --help
 
 Run these inside any git repo. You should see branch, remote, and sync state.
 
-### 4. Optional — enable `gw ask` (AI)
+### 4. Optional — enable AI (`gw ask`, `gw diff`)
 
 ```powershell
 copy .env.example .env          # Windows
@@ -63,9 +63,22 @@ GEMINI_API_KEY=your-key-here
 
 ```bash
 gw ask "what branch am I on?"
+gw diff HEAD~2
 ```
 
 All other commands work **without** an API key.
+
+### `gw diff FROM [TO]`
+
+Smart diff report — what changed, why it matters, risk areas, and next steps:
+
+```bash
+gw diff HEAD~2              # commit vs working tree (default TO)
+gw diff abc1234 HEAD        # two commits or tags
+gw diff v1.0 v1.1 -n        # dry-run: git stats only
+```
+
+Stats come from git; narrative summary from Gemini. Requires `GEMINI_API_KEY`.
 
 ---
 
@@ -79,6 +92,7 @@ All other commands work **without** an API key.
 | `gw do "intent"` | ~30 natural-language workflows |
 | `gw undo last` | Interactive undo menu |
 | `gw ask "question"` | Repo-aware AI help (optional) |
+| `gw diff FROM [TO]` | Smart diff summary (optional) |
 
 Global flags: `-C path` (repo directory), `-n` (dry-run), `-y` (skip confirm).
 
@@ -94,6 +108,7 @@ gw do "commit 'wip refactor'"
 gw do "create branch 'feature/login'"
 gw undo last
 gw ask "should I pull before pushing?" -n
+gw diff HEAD~2
 ```
 
 **Quoting (PowerShell):** wrap the whole intent in double quotes; put messages and branch names in **single quotes** inside:
@@ -163,7 +178,7 @@ python src/gitwise/recipes/validate_recipes.py
 
 ## Roadmap (summary)
 
-**Shipped:** `whereami`, `do`, `pull`, `save`, `undo`, `ask`, recipes, validation pipeline.
+**Shipped:** `whereami`, `do`, `pull`, `save`, `undo`, `ask`, `diff`, recipes, validation pipeline.
 
 **Planned:** `gw explain-state`, `gw explain`, `gw fix`, merge-into-any-branch, GitHub PR via `gh`, guided rebase.
 

@@ -1,6 +1,6 @@
-# Gemini setup for `gw ask`
+# Gemini setup (`gw ask` and `gw diff`)
 
-`gw ask` is **optional**. All other Gitwise commands work offline with no API key.
+`gw ask` and `gw diff` are **optional**. All other Gitwise commands work offline with no API key.
 
 ## 1. Get a free key
 
@@ -46,15 +46,16 @@ One line, no quotes:
 
 ```bash
 gw ask "what branch am I on?"
-gw ask "should I pull before pushing?" -n
+gw diff HEAD~2
+gw diff abc1234 HEAD -n
 ```
 
 ## How it stays safe
 
 - Model: `gemini-2.5-flash-lite` (free tier, minimal tokens)
 - Context is compact and redacted — see [SECURITY.md](SECURITY.md)
-- LLM-suggested commands are validated against Gitwise's planner
-- Only validated plans can run; raw LLM output is never executed
+- `gw ask`: LLM commands validated against Gitwise planner before run
+- `gw diff`: patch truncated; `.env` and key files excluded from analysis
 - API key is sent in an HTTP header, not the URL
 
 ## Troubleshooting
@@ -64,4 +65,5 @@ gw ask "should I pull before pushing?" -n
 | API key not found | Create `.env` from `.env.example` or set `GEMINI_API_KEY` |
 | Invalid API key | Regenerate at AI Studio |
 | Rate limit (429) | Free tier quota — wait and retry |
-| Unverified plan | Use `gw do "…"` or rephrase your question |
+| Unverified plan (`gw ask`) | Use `gw do "…"` or rephrase your question |
+| No differences (`gw diff`) | Check refs with `git log --oneline` |
